@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.api.endpoints import auth, face_match
+from app.api.endpoints import auth, face_match, liveness
 import os
 
 load_dotenv()
@@ -24,6 +24,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(face_match.router, prefix="/api/v1/face", tags=["Face Matching"])
+app.include_router(liveness.router, prefix="/api/v1/liveness", tags=["Liveness Detection"])
 
 @app.get("/")
 async def root():
@@ -31,7 +32,7 @@ async def root():
         "message": "Facti.ai API",
         "status": "online",
         "version": "1.0.0",
-        "services": ["authentication", "face_matching"]
+        "services": ["authentication", "face_matching", "liveness_detection"]
     }
 
 @app.get("/health")
