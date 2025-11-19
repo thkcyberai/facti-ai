@@ -43,3 +43,18 @@ frontend/node_modules/
 dist/
 build/
 *.egg-info/
+
+# Build artifacts
+build/
+buildlib*/
+*.so
+
+# Temp Word files
+~$*
+
+# DeepFace/InsightFace build files
+insightface/
+.insightface/
+
+# Test images (optional - keep or remove)
+# test_images/
