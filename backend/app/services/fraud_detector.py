@@ -27,23 +27,7 @@ class FraudDetector:
         verification_data: Dict,
         attempt_history: Optional[List] = None
     ) -> Dict:
-        """
-        Calculate fraud risk score
-        
-        Args:
-            user_id: User identifier
-            device_info: Device fingerprint data
-            verification_data: Face match, liveness results
-            attempt_history: Previous attempts by this user
-            
-        Returns:
-            {
-                'risk_score': 0-100,
-                'risk_level': 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL',
-                'flags': ['flag1', 'flag2'],
-                'recommendation': 'APPROVE'|'REVIEW'|'REJECT'
-            }
-        """
+        """Calculate fraud risk score"""
         
         flags = []
         score = 0
@@ -183,28 +167,38 @@ class FraudDetector:
         score = 0
         flags = []
         
-        # Check face match confidence
+        # Check face match
         face_match = verification_data.get('face_match', {})
         if not face_match.get('match'):
             score += 30
             flags.append('FACE_MATCH_FAILED')
-        elif face_match.get('confidence', 1.0) < 0.5:
-            score += 20
-            flags.append('LOW_FACE_CONFIDENCE')
+        else:
+            # Check similarity (numeric value)
+            similarity = face_match.get('similarity', 1.0)
+            if similarity is not None and isinstance(similarity, (int, float)):
+                if float(similarity) < 0.5:
+                    score += 20
+                    flags.append('LOW_FACE_CONFIDENCE')
         
         # Check liveness detection
         liveness = verification_data.get('liveness', {})
         if not liveness.get('is_live'):
             score += 40
             flags.append('LIVENESS_FAILED')
-        elif liveness.get('confidence', 1.0) < 0.3:
-            score += 25
-            flags.append('LOW_LIVENESS_CONFIDENCE')
+        else:
+            # Check confidence (numeric value)
+            liveness_conf = liveness.get('confidence', 1.0)
+            if liveness_conf is not None and isinstance(liveness_conf, (int, float)):
+                if float(liveness_conf) < 0.3:
+                    score += 25
+                    flags.append('LOW_LIVENESS_CONFIDENCE')
         
         # Check for quality mismatches
-        if face_match.get('distance', 0) > 0.5:
-            score += 15
-            flags.append('HIGH_FACE_DISTANCE')
+        distance = face_match.get('distance', 0)
+        if distance is not None and isinstance(distance, (int, float)):
+            if float(distance) > 0.5:
+                score += 15
+                flags.append('HIGH_FACE_DISTANCE')
         
         return score, flags
     

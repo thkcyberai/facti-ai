@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.api.endpoints import auth, face_match, liveness, fraud
+from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc
 import os
 
 load_dotenv()
@@ -23,6 +23,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(kyc.router, prefix="/api/v1/kyc", tags=["KYC Verification"])
+app.include_router(document.router, prefix="/api/v1/document", tags=["Document Verification"])
 app.include_router(face_match.router, prefix="/api/v1/face", tags=["Face Matching"])
 app.include_router(liveness.router, prefix="/api/v1/liveness", tags=["Liveness Detection"])
 app.include_router(fraud.router, prefix="/api/v1/fraud", tags=["Fraud Detection"])
@@ -30,11 +32,13 @@ app.include_router(fraud.router, prefix="/api/v1/fraud", tags=["Fraud Detection"
 @app.get("/")
 async def root():
     return {
-        "message": "Facti.ai API",
+        "message": "Facti.ai API - Complete KYC Solution",
         "status": "online",
         "version": "1.0.0",
         "services": [
+            "kyc_verification",
             "authentication",
+            "document_verification",
             "face_matching", 
             "liveness_detection",
             "fraud_detection"
