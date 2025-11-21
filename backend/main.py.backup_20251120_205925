@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc
-from app.middleware.rate_limiter import rate_limit_middleware
 import os
 
 load_dotenv()
@@ -22,9 +21,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rate Limiting - Protect against abuse and DDoS
-app.middleware("http")(rate_limit_middleware)
-
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(kyc.router, prefix="/api/v1/kyc", tags=["KYC Verification"])
@@ -43,7 +39,7 @@ async def root():
             "kyc_verification",
             "authentication",
             "document_verification",
-            "face_matching",
+            "face_matching", 
             "liveness_detection",
             "fraud_detection"
         ]

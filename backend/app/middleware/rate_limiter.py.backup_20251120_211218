@@ -1,0 +1,63 @@
+"""Rate Limiting Middleware for KYCShield API"""
+
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from datetime import datetime, timedelta
+from collections import defaultdict
+from typing import Dict
+
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 60, requests_per_hour: int = 1000):
+        self.requests_per_minute = requests_per_minute
+        self.requests_per_hour = requests_per_hour
+        self.minute_requests: Dict[str, list] = defaultdict(list)
+        self.hour_requests: Dict[str, list] = defaultdict(list)
+    
+    def _get_client_ip(self, request: Request) -> str:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        if request.client:
+            return request.client.host
+        return "unknown"
+    
+    def check_rate_limit(self, request: Request) -> tuple[bool, str]:
+        ip = self._get_client_ip(request)
+        now = datetime.now()
+        
+        # Clean old entries
+        self.minute_requests[ip] = [ts for ts in self.minute_requests[ip] 
+                                     if now - ts < timedelta(minutes=1)]
+        self.hour_requests[ip] = [ts for ts in self.hour_requests[ip] 
+                                   if now - ts < timedelta(hours=1)]
+        
+        # Check limits
+        if len(self.minute_requests[ip]) >= self.requests_per_minute:
+            return False, "Rate limit: 60 requests/minute exceeded"
+        
+        if len(self.hour_requests[ip]) >= self.requests_per_hour:
+            return False, "Rate limit: 1000 requests/hour exceeded"
+        
+        # Record request
+        self.minute_requests[ip].append(now)
+        self.hour_requests[ip].append(now)
+        
+        return True, ""
+
+# Global instance
+rate_limiter = RateLimiter()
+
+async def rate_limit_middleware(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    
+    is_allowed, error_msg = rate_limiter.check_rate_limit(request)
+    
+    if not is_allowed:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"error": "Rate limit exceeded", "message": error_msg},
+            headers={"Retry-After": "60"}
+        )
+    
+    return await call_next(request)
