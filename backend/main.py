@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc
 from app.middleware.rate_limiter import rate_limit_middleware
+from app.middleware.input_validator import input_validation_middleware
 import os
 
 load_dotenv()
@@ -24,6 +25,9 @@ app.add_middleware(
 
 # Rate Limiting - Protect against abuse and DDoS
 app.middleware("http")(rate_limit_middleware)
+
+# Input Validation - Validate all uploads and inputs
+app.middleware("http")(input_validation_middleware)
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
