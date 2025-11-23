@@ -1,76 +1,133 @@
 """
-Rate Limiting Middleware for KYCShield API
-Protects against abuse and DDoS attacks
+Rate Limiting Middleware with Token Bucket Algorithm
+Fixed: Uses time.time() instead of datetime for accurate timing
 """
 
-from fastapi import Request, status
+from fastapi import Request
 from fastapi.responses import JSONResponse
-from datetime import datetime, timedelta
 from collections import defaultdict
-from typing import Dict
+import time
+from app.utils.audit_logger import audit_logger
+
+
+class TokenBucket:
+    """Token bucket for rate limiting"""
+    
+    def __init__(self, capacity: int, refill_rate: float):
+        """
+        Args:
+            capacity: Maximum number of tokens (requests)
+            refill_rate: Tokens added per second
+        """
+        self.capacity = capacity
+        self.refill_rate = refill_rate
+        self.tokens = capacity
+        self.last_refill = time.time()
+    
+    def consume(self, tokens: int = 1) -> bool:
+        """
+        Try to consume tokens
+        Returns True if successful, False if not enough tokens
+        """
+        # Refill tokens based on elapsed time
+        now = time.time()
+        elapsed = now - self.last_refill
+        
+        # Add tokens based on elapsed time
+        self.tokens = min(
+            self.capacity,
+            self.tokens + (elapsed * self.refill_rate)
+        )
+        self.last_refill = now
+        
+        # Try to consume
+        if self.tokens >= tokens:
+            self.tokens -= tokens
+            return True
+        
+        return False
+
 
 class RateLimiter:
-    """Simple in-memory rate limiter"""
+    """Rate limiter using token bucket per IP"""
     
     def __init__(self, requests_per_minute: int = 60):
+        """
+        Args:
+            requests_per_minute: Max requests allowed per minute per IP
+        """
         self.requests_per_minute = requests_per_minute
-        self.requests: Dict[str, list] = defaultdict(list)
+        self.buckets = defaultdict(lambda: TokenBucket(
+            capacity=requests_per_minute,
+            refill_rate=requests_per_minute / 60.0  # Tokens per second
+        ))
+        self.last_cleanup = time.time()
     
     def _get_client_ip(self, request: Request) -> str:
         """Extract client IP from request"""
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()
-        if request.client:
-            return request.client.host
-        return "unknown"
+        return request.client.host if request.client else "unknown"
+    
+    def _cleanup_old_buckets(self):
+        """Periodically clean up inactive IP addresses (every 5 minutes)"""
+        now = time.time()
+        if now - self.last_cleanup > 300:  # 5 minutes
+            # Remove buckets that are full (inactive)
+            inactive_ips = [
+                ip for ip, bucket in self.buckets.items()
+                if bucket.tokens >= bucket.capacity
+            ]
+            for ip in inactive_ips:
+                del self.buckets[ip]
+            
+            self.last_cleanup = now
     
     def check_rate_limit(self, request: Request) -> tuple[bool, str]:
-        """Check if request exceeds rate limits"""
+        """
+        Check if request is within rate limit
+        Returns: (is_allowed, message)
+        """
         ip = self._get_client_ip(request)
-        now = datetime.now()
+        bucket = self.buckets[ip]
         
-        # Add current timestamp
-        self.requests[ip].append(now)
+        # Try to consume a token
+        is_allowed = bucket.consume(1)
         
-        # EXTENSIVE DEBUG
-        total = len(self.requests[ip])
-        print(f"[DEBUG] Total timestamps stored: {total}")
+        if not is_allowed:
+            # Calculate remaining tokens (for error message)
+            remaining = int(bucket.tokens)
+            audit_logger.log_rate_limit_exceeded(ip, request.url.path)
+            return False, f"Rate limit exceeded. Try again in {60 - remaining} seconds."
         
-        # Count requests in last 60 seconds
-        one_minute_ago = now - timedelta(seconds=60)
-        recent_requests = [ts for ts in self.requests[ip] if ts > one_minute_ago]
-        count = len(recent_requests)
+        # Periodic cleanup
+        self._cleanup_old_buckets()
         
-        print(f"[DEBUG] Recent timestamps (last 60s): {count}")
-        print(f"[DEBUG] Should block? {count} > {self.requests_per_minute} = {count > self.requests_per_minute}")
-        
-        # Check if exceeded
-        if count > self.requests_per_minute:
-            print(f"[RATE LIMITER] 🚫 BLOCKING REQUEST #{count}!")
-            return False, f"Rate limit exceeded: {count}/{self.requests_per_minute} requests per minute"
-        
-        print(f"[RATE LIMITER] ✅ Allowing request {count}/{self.requests_per_minute}")
         return True, ""
 
-# Global instance
+
+# Global rate limiter instance
 rate_limiter = RateLimiter(requests_per_minute=60)
 
+
 async def rate_limit_middleware(request: Request, call_next):
-    """Middleware to enforce rate limits on all requests"""
+    """Middleware function to apply rate limiting"""
     
-    # Skip health check
-    if request.url.path == "/health":
+    # Skip rate limiting for health/docs endpoints
+    if request.url.path in ["/health", "/", "/docs", "/redoc", "/openapi.json"]:
         return await call_next(request)
     
     # Check rate limit
-    is_allowed, error_msg = rate_limiter.check_rate_limit(request)
+    is_allowed, msg = rate_limiter.check_rate_limit(request)
     
     if not is_allowed:
         return JSONResponse(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            content={"error": "Rate limit exceeded", "message": error_msg},
+            status_code=429,
+            content={"error": msg},
             headers={"Retry-After": "60"}
         )
     
-    return await call_next(request)
+    # Process request
+    response = await call_next(request)
+    return response
