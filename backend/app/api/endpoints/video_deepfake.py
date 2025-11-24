@@ -1,133 +1,188 @@
 """
-Video Deepfake Detection Endpoint
-XceptionNet Model - 99.90% Accuracy
+Video Deepfake Detection API Endpoint - Secured
+Detect AI-generated/synthetic videos using XceptionNet (99.90% accuracy)
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Request
-from keras.models import load_model
-from keras.applications.xception import preprocess_input
-import cv2
-import numpy as np
-import tempfile
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
+from app.services.video_deepfake_detector import get_detector
+from app.middleware.jwt_auth import require_jwt_token
+from app.middleware.rate_limiter import rate_limiter
+from app.utils.audit_logger import audit_logger
 import os
+import uuid
+from datetime import datetime
+from typing import Union
 
 router = APIRouter()
 
-# Load model at startup (singleton)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../../../models/xceptionnet_deepfake_97pct.h5")
-model = None
-IMG_SIZE = 299
+# Temporary upload directory
+UPLOAD_DIR = "uploads/temp"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def get_model():
-    """Load model once and reuse"""
-    global model
-    if model is None:
-        model = load_model(MODEL_PATH, compile=False)
-    return model
+# Max file size: 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024
 
-def extract_frames(video_path, num_frames=10):
-    """Extract frames from video for analysis"""
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP from request"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+@router.post("/verify")
+async def verify_video(
+    request: Request,
+    video: UploadFile = File(..., description="Video file (MP4, MOV) for deepfake detection"),
+    auth: Union[dict, None] = Depends(require_jwt_token)
+):
+    """
+    Detect video deepfakes using AI (XceptionNet model - 99.90% accuracy)
+
+    **Authentication Required:** JWT Bearer token
+
+    **Upload:** Video file → Returns deepfake detection result
+
+    **Detects:**
+    - Face2Face attacks
+    - FaceSwap attacks
+    - Deepfakes
+    - NeuralTextures
+    - Face-Reenactment
+
+    **Security:**
+    - Rate limited (60 requests/min per IP)
+    - All attempts logged for audit
+    - JWT authentication required
+    - File size limit: 50MB
+    """
+
+    client_ip = get_client_ip(request)
+    user_id = auth.get('user_id', 'unknown') if auth else 'unknown'
+
+    # Check rate limit
+    is_allowed, msg = rate_limiter.check_rate_limit(request)
+    if not is_allowed:
+        audit_logger.log_rate_limit_exceeded(client_ip, "/video-deepfake/verify")
+        raise HTTPException(status_code=429, detail=msg)
+
+    # Validate file type
+    allowed_types = ['video/mp4', 'video/mpeg', 'video/quicktime']
+    if video.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail="Video must be MP4 or MOV format"
+        )
+
+    # Generate unique filename
+    filename = f"{uuid.uuid4()}_{video.filename}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
     try:
-        cap = cv2.VideoCapture(video_path)
-        frames = []
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        if total_frames == 0:
-            cap.release()
-            return None
-        
-        frame_indices = np.linspace(0, total_frames - 1, num_frames, dtype=int)
-        
-        for idx in frame_indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-            ret, frame = cap.read()
-            if ret:
-                frame = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frames.append(frame)
-        
-        cap.release()
-        return frames if len(frames) == num_frames else None
-    except Exception as e:
-        return None
-
-@router.post("/detect")
-async def detect_video_deepfake(request: Request, video: UploadFile = File(...)):
-    """
-    Detect if uploaded video is a deepfake
-    
-    Returns:
-    - verdict: AUTHENTIC or NOT_AUTHENTIC
-    - confidence: 0-100%
-    - analysis: Frame-by-frame scores
-    """
-    
-    # Validate video upload
-    request.state.validator.validate_video_upload(video)
-    
-    # Save uploaded video temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
+        # Read file content
         content = await video.read()
-        tmp_file.write(content)
-        tmp_path = tmp_file.name
-    
-    try:
-        # Extract frames
-        frames = extract_frames(tmp_path)
         
-        if not frames:
+        # Validate file size
+        if len(content) > MAX_FILE_SIZE:
             raise HTTPException(
-                status_code=400,
-                detail="Could not extract frames from video. Please upload a valid video file."
+                status_code=413, 
+                detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB"
             )
-        
-        # Preprocess frames
-        frames_array = np.array(frames, dtype=np.float32)
-        frames_array = preprocess_input(frames_array)
-        
-        # Get model and predict
-        model = get_model()
-        predictions = model.predict(frames_array, verbose=0)
-        
-        # Calculate results
-        frame_scores = [float(pred[0]) for pred in predictions]
-        avg_score = float(np.mean(predictions))
-        
-        # Determine verdict (0.5 threshold)
-        is_deepfake = avg_score > 0.5
-        confidence = avg_score if is_deepfake else (1 - avg_score)
-        
-        verdict = "NOT_AUTHENTIC" if is_deepfake else "AUTHENTIC"
-        
-        return {
-            "verdict": verdict,
-            "confidence": round(confidence * 100, 2),
-            "raw_score": round(avg_score, 4),
-            "analysis": {
-                "frames_analyzed": len(frame_scores),
-                "frame_scores": [round(s, 4) for s in frame_scores],
-                "avg_frame_score": round(np.mean(frame_scores), 4),
-                "max_frame_score": round(max(frame_scores), 4),
-                "min_frame_score": round(min(frame_scores), 4)
-            },
-            "model_info": {
-                "name": "XceptionNet",
-                "accuracy": "99.90%",
-                "validation": "1,000 unseen videos"
+
+        # Save uploaded file
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        # Log verification attempt
+        audit_logger.log_verification_request(
+            user_id=user_id,
+            ip_address=client_ip,
+            verification_type="video_deepfake"
+        )
+
+        # Get detector and run deepfake detection
+        detector = get_detector()
+        result = detector.detect(file_path)
+
+        # Add metadata
+        result['timestamp'] = datetime.utcnow().isoformat()
+        result['filename'] = video.filename
+        result['file_size_bytes'] = len(content)
+
+        # Log result
+        audit_logger.log_event(
+            event_type="video_deepfake_result",
+            user_id=user_id,
+            ip_address=client_ip,
+            details={
+                "verdict": result.get('verdict', 'UNKNOWN'),
+                "is_real": result.get('is_real', False),
+                "confidence": result.get('confidence', 0.0),
+                "fake_probability": result.get('fake_probability', 0.0)
             }
-        }
-    
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log error
+        audit_logger.log_event(
+            event_type="video_deepfake_error",
+            user_id=user_id,
+            ip_address=client_ip,
+            details={"error": str(e)}
+        )
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Video deepfake detection failed: {str(e)}"
+        )
+
     finally:
         # Clean up temporary file
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except:
+            pass
+
+
+@router.get("/model-info")
+async def get_model_info():
+    """
+    Get information about the video deepfake detection model
+
+    **No authentication required** - Public model information
+    """
+    detector = get_detector()
+    return detector.get_model_info()
+
 
 @router.get("/health")
-async def video_deepfake_health():
-    """Health check for video deepfake detection"""
+async def health_check():
+    """
+    Check if video deepfake detection service is ready
+
+    **No authentication required** - Public health check
+    """
     return {
         "status": "healthy",
+        "service": "video_deepfake_detector",
         "model": "XceptionNet",
         "accuracy": "99.90%",
-        "ready": True
+        "security": {
+            "authentication": "required",
+            "rate_limiting": "enabled",
+            "audit_logging": "enabled",
+            "max_file_size_mb": MAX_FILE_SIZE / (1024*1024)
+        },
+        "detects": [
+            "Face2Face attacks",
+            "FaceSwap attacks",
+            "Deepfakes",
+            "NeuralTextures",
+            "Face-Reenactment"
+        ]
     }

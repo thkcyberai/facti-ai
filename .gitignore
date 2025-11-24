@@ -58,3 +58,36 @@ insightface/
 
 # Test images (optional - keep or remove)
 # test_images/
+
+# Backup files
+*.backup*
+*.backup
+
+# Video datasets - too large
+validation_videos/
+test_videos/
+*.mp4
+*.avi
+*.mov
+
+# Model files - too large for GitHub
+models/
+*.h5
+
+# Dataset folders
+document-fraud-detection/dataset/
+document-fraud-detection/lambda_upload/
+deepfake-video-detection/
+
+# Logs
+backend/logs/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Temp
+uploads/temp/
+backend/=1.13.3

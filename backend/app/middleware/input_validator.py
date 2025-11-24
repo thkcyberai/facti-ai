@@ -7,6 +7,7 @@ from fastapi import Request, HTTPException, UploadFile
 from typing import List
 import os
 import re
+from app.utils.audit_logger import audit_logger
 
 class InputValidator:
     """Validates all incoming requests and file uploads"""
@@ -129,12 +130,14 @@ class InputValidator:
     def check_sql_injection(input_str: str) -> None:
         """Check for SQL injection patterns"""
         if InputValidator.SQL_INJECTION_PATTERN.search(input_str):
+            audit_logger.log_security_alert("sql_injection_attempt", "unknown", {"input": input_str[:100]})
             raise HTTPException(status_code=400, detail="Input contains suspicious SQL patterns")
 
     @staticmethod
     def check_xss(input_str: str) -> None:
         """Check for XSS patterns"""
         if InputValidator.XSS_PATTERN.search(input_str):
+            audit_logger.log_security_alert("xss_attempt", "unknown", {"input": input_str[:100]})
             raise HTTPException(status_code=400, detail="Input contains suspicious script patterns")
 
     @staticmethod
