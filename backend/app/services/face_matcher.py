@@ -16,7 +16,7 @@ class FaceMatcher:
         # DeepFace will auto-download models on first use
         self.model_name = "Facenet512"  # Most accurate for face matching
         self.distance_metric = "cosine"
-        self.threshold = 0.30  # Lower = stricter matching
+        self.threshold = 0.35  # Adjusted for glasses/lighting variations
         
     def verify(self, id_image_path: str, selfie_image_path: str) -> Dict:
         """

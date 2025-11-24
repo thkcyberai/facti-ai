@@ -13,7 +13,7 @@ from app.models.user import User
 from app.utils.audit_logger import audit_logger
 import uuid
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 # Request/Response models
 class RegisterRequest(BaseModel):

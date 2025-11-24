@@ -37,7 +37,7 @@ async def verify_faces(
     request: Request,
     id_photo: UploadFile = File(..., description="ID document photo"),
     selfie: UploadFile = File(..., description="Selfie photo"),
-    auth: Union[dict, None] = Depends(require_api_key)  # Require authentication
+    auth: Union[dict, None] = Depends(require_jwt_token)  # Require authentication
 ):
     """
     Verify if two face images match
