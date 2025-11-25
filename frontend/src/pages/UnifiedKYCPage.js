@@ -30,7 +30,10 @@ function UnifiedKYCPage() {
 
   const handleFileChange = (setter) => (e) => {
     const file = e.target.files[0];
-    if (file) setter(file);
+    if (file) {
+      console.log("File selected:", file.name, file.size);
+      setter(file);
+    }
   };
 
   const runUnifiedKYC = async () => {
@@ -245,7 +248,7 @@ function UnifiedKYCPage() {
                 <div style={{fontSize: '24px', marginBottom: '10px'}}>{results.face.passed ? '✅' : '❌'}</div>
                 <h4 style={{margin: '0 0 5px 0', color: '#4ade80'}}>Face Match</h4>
                 <p style={{color: results.face.passed ? '#4ade80' : '#f87171', fontWeight: '600', margin: '5px 0'}}>{results.face.passed ? 'MATCH' : 'NO MATCH'}</p>
-                <p style={{color: '#888', fontSize: '13px', margin: 0}}>{((results.face.similarity || results.face.confidence || 0) * 100).toFixed(1)}% similarity</p>
+                <p style={{color: '#888', fontSize: '13px', margin: 0}}>{(results.face.similarity || 0).toFixed(1)}% similarity</p>
               </div>
 
               {/* Document Result */}
