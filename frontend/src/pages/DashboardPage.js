@@ -99,48 +99,95 @@ function DashboardPage() {
   };
 
   const tabs = [
-    { id: 'video', label: 'Video Deepfake', icon: '🎬', color: '#22d3ee' },
-    { id: 'document', label: 'Document Fraud', icon: '📄', color: '#a855f7' },
-    { id: 'face', label: 'Face Matching', icon: '👤', color: '#4ade80' },
+    { id: 'video', label: 'Video Deepfake', icon: '📹', color: '#a78bfa' },
+    { id: 'document', label: 'Document Fraud', icon: '📄', color: '#a78bfa' },
+    { id: 'face', label: 'Face Matching', icon: '👤', color: '#a78bfa' },
   ];
 
   return (
-    <div style={{minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%)', color: 'white', fontFamily: 'Inter, sans-serif'}}>
-      {/* Header */}
-      <header style={{borderBottom: '1px solid #333', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-          <div style={{width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px'}}>K</div>
-          <div>
-            <h1 style={{margin: 0, fontSize: '20px', background: 'linear-gradient(to right, #22d3ee, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>KYCShield</h1>
-            <p style={{margin: 0, fontSize: '11px', color: '#666'}}>Detection Dashboard</p>
-          </div>
+    <div style={{minHeight: '100vh', background: '#0c1222', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
+      {/* Header - Matching HomePage */}
+      <header style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '28px 100px',
+        maxWidth: '1600px',
+        margin: '0 auto',
+        borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
+      }}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer'}} onClick={() => navigate('/')}>
+          <img 
+            src="/assets/KYCLogo.png" 
+            alt="KYCShield Logo"
+            style={{height: '48px', width: 'auto'}}
+          />
+          <span style={{
+            fontSize: '36px',
+            fontWeight: '600',
+            color: 'white',
+            letterSpacing: '-0.5px'
+          }}>KYCShield</span>
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <button onClick={() => navigate('/unified')} style={{padding: '10px 20px', background: 'linear-gradient(to right, #f59e0b, #ef4444)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: '600', cursor: 'pointer', fontSize: '14px'}}>
+          <button onClick={() => navigate('/unified')} style={{
+            padding: '16px 32px',
+            background: 'linear-gradient(135deg, #c084fc, #a855f7, #7c3aed)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontSize: '15px'
+          }}>
             🎯 Unified KYC
           </button>
-          <button onClick={handleLogout} style={{padding: '10px 20px', background: 'rgba(255,255,255,0.1)', border: '1px solid #444', borderRadius: '8px', color: '#888', cursor: 'pointer', fontSize: '14px'}}>
+          <button onClick={handleLogout} style={{
+            padding: '16px 32px',
+            background: 'transparent',
+            border: '1px solid rgba(148, 163, 184, 0.3)',
+            borderRadius: '8px',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '15px'
+          }}>
             Logout
           </button>
         </div>
       </header>
 
-      <main style={{maxWidth: '900px', margin: '0 auto', padding: '40px 20px'}}>
+      <main style={{maxWidth: '1100px', margin: '0 auto', padding: '70px 40px'}}>
+        {/* Page Title */}
+        <div style={{textAlign: 'center', marginBottom: '40px'}}>
+          <h1 style={{
+            fontSize: '56px',
+            fontWeight: '700',
+            margin: '0 0 16px 0',
+            letterSpacing: '-1px'
+          }}>
+            <span style={{color: '#60a5fa'}}>Detection</span>
+            <span style={{color: 'white'}}> Dashboard</span>
+          </h1>
+          <p style={{color: '#94a3b8', fontSize: '22px', margin: 0}}>
+            Test individual detection capabilities
+          </p>
+        </div>
+
         {/* Tabs */}
-        <div style={{display: 'flex', gap: '10px', marginBottom: '30px', justifyContent: 'center'}}>
+        <div style={{display: 'flex', gap: '16px', marginBottom: '50px', justifyContent: 'center'}}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); clearAll(); }}
               style={{
-                padding: '12px 24px',
-                background: activeTab === tab.id ? 'rgba(255,255,255,0.1)' : 'transparent',
-                border: activeTab === tab.id ? '1px solid ' + tab.color : '1px solid #333',
+                padding: '18px 36px',
+                background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                border: activeTab === tab.id ? '1px solid ' + tab.color : '1px solid rgba(148, 163, 184, 0.2)',
                 borderRadius: '10px',
-                color: activeTab === tab.id ? tab.color : '#666',
+                color: activeTab === tab.id ? tab.color : '#94a3b8',
                 cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: activeTab === tab.id ? '600' : '400',
+                fontSize: '17px',
+                fontWeight: activeTab === tab.id ? '600' : '500',
                 transition: 'all 0.2s'
               }}
             >
@@ -150,25 +197,55 @@ function DashboardPage() {
         </div>
 
         {/* Detection Card */}
-        <div style={{background: 'rgba(30,30,50,0.5)', border: '1px solid #333', borderRadius: '20px', padding: '30px'}}>
-          
+        <div style={{
+          background: 'rgba(30, 41, 59, 0.4)',
+          border: '1px solid rgba(148, 163, 184, 0.1)',
+          borderRadius: '24px',
+          padding: '50px'
+        }}>
+
           {/* Video Tab */}
           {activeTab === 'video' && (
             <div>
-              <h3 style={{margin: '0 0 20px 0', color: '#22d3ee'}}>🎬 Video Deepfake Detection</h3>
-              <p style={{color: '#666', marginBottom: '20px'}}>Upload a video to detect AI-generated deepfakes with 99.90% accuracy.</p>
-              <div style={{border: '2px dashed #444', borderRadius: '15px', padding: '40px', textAlign: 'center', marginBottom: '20px'}}>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>📹 Video Deepfake Detection</h3>
+              <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload a video to detect AI-generated deepfakes with 99.90% accuracy.</p>
+              <div style={{
+                border: '2px dashed rgba(148, 163, 184, 0.2)',
+                borderRadius: '20px',
+                padding: '70px',
+                textAlign: 'center',
+                marginBottom: '35px',
+                background: 'rgba(15, 23, 42, 0.4)'
+              }}>
                 <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
                 <label htmlFor="video-upload" style={{cursor: 'pointer'}}>
-                  <div style={{fontSize: '40px', marginBottom: '10px'}}>📤</div>
-                  {videoFile ? <p style={{color: '#22d3ee', fontWeight: '500'}}>{videoFile.name}</p> : <p style={{color: '#666'}}>Drop video or click to upload</p>}
+                  <div style={{fontSize: '64px', marginBottom: '12px'}}>📤</div>
+                  {videoFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '15px'}}>{videoFile.name}</p> : <p style={{color: '#64748b', fontSize: '15px'}}>Drop video or click to upload</p>}
                 </label>
               </div>
-              <div style={{display: 'flex', gap: '10px'}}>
-                <button onClick={analyzeVideo} disabled={!videoFile || isAnalyzing} style={{flex: 1, padding: '15px', background: videoFile && !isAnalyzing ? 'linear-gradient(to right, #06b6d4, #0891b2)' : '#333', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', cursor: videoFile && !isAnalyzing ? 'pointer' : 'not-allowed'}}>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={analyzeVideo} disabled={!videoFile || isAnalyzing} style={{
+                  flex: 1,
+                  padding: '22px',
+                  background: videoFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '17px',
+                  cursor: videoFile && !isAnalyzing ? 'pointer' : 'not-allowed'
+                }}>
                   {isAnalyzing ? 'Analyzing...' : 'Analyze Video'}
                 </button>
-                <button onClick={clearAll} style={{padding: '15px 25px', background: 'rgba(255,255,255,0.1)', border: '1px solid #444', borderRadius: '10px', color: '#888', cursor: 'pointer'}}>Clear</button>
+                <button onClick={clearAll} style={{
+                  padding: '22px 36px',
+                  background: 'transparent',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  borderRadius: '10px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '15px'
+                }}>Clear</button>
               </div>
             </div>
           )}
@@ -176,20 +253,45 @@ function DashboardPage() {
           {/* Document Tab */}
           {activeTab === 'document' && (
             <div>
-              <h3 style={{margin: '0 0 20px 0', color: '#a855f7'}}>📄 Document Fraud Detection</h3>
-              <p style={{color: '#666', marginBottom: '20px'}}>Upload an ID document to detect synthetic or tampered documents with 100% accuracy.</p>
-              <div style={{border: '2px dashed #444', borderRadius: '15px', padding: '40px', textAlign: 'center', marginBottom: '20px'}}>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>📄 Document Fraud Detection</h3>
+              <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload an ID document to detect synthetic or tampered documents with 100% accuracy.</p>
+              <div style={{
+                border: '2px dashed rgba(148, 163, 184, 0.2)',
+                borderRadius: '20px',
+                padding: '70px',
+                textAlign: 'center',
+                marginBottom: '35px',
+                background: 'rgba(15, 23, 42, 0.4)'
+              }}>
                 <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />
                 <label htmlFor="doc-upload" style={{cursor: 'pointer'}}>
-                  <div style={{fontSize: '40px', marginBottom: '10px'}}>📤</div>
-                  {documentFile ? <p style={{color: '#a855f7', fontWeight: '500'}}>{documentFile.name}</p> : <p style={{color: '#666'}}>Drop document or click to upload</p>}
+                  <div style={{fontSize: '64px', marginBottom: '12px'}}>📤</div>
+                  {documentFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '15px'}}>{documentFile.name}</p> : <p style={{color: '#64748b', fontSize: '15px'}}>Drop document or click to upload</p>}
                 </label>
               </div>
-              <div style={{display: 'flex', gap: '10px'}}>
-                <button onClick={analyzeDocument} disabled={!documentFile || isAnalyzing} style={{flex: 1, padding: '15px', background: documentFile && !isAnalyzing ? 'linear-gradient(to right, #8b5cf6, #7c3aed)' : '#333', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', cursor: documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'}}>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={analyzeDocument} disabled={!documentFile || isAnalyzing} style={{
+                  flex: 1,
+                  padding: '22px',
+                  background: documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '17px',
+                  cursor: documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'
+                }}>
                   {isAnalyzing ? 'Analyzing...' : 'Analyze Document'}
                 </button>
-                <button onClick={clearAll} style={{padding: '15px 25px', background: 'rgba(255,255,255,0.1)', border: '1px solid #444', borderRadius: '10px', color: '#888', cursor: 'pointer'}}>Clear</button>
+                <button onClick={clearAll} style={{
+                  padding: '22px 36px',
+                  background: 'transparent',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  borderRadius: '10px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '15px'
+                }}>Clear</button>
               </div>
             </div>
           )}
@@ -197,64 +299,129 @@ function DashboardPage() {
           {/* Face Tab */}
           {activeTab === 'face' && (
             <div>
-              <h3 style={{margin: '0 0 20px 0', color: '#4ade80'}}>👤 Face Matching</h3>
-              <p style={{color: '#666', marginBottom: '20px'}}>Compare a selfie with an ID photo to verify identity with 96.94% accuracy.</p>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px'}}>
-                <div style={{border: '2px dashed #444', borderRadius: '15px', padding: '30px', textAlign: 'center'}}>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>👤 Face Matching</h3>
+              <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Compare a selfie with an ID photo to verify identity with 96.94% accuracy.</p>
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px'}}>
+                <div style={{
+                  border: '2px dashed rgba(148, 163, 184, 0.2)',
+                  borderRadius: '20px',
+                  padding: '70px',
+                  textAlign: 'center',
+                  background: 'rgba(15, 23, 42, 0.4)'
+                }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
                   <label htmlFor="selfie-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: '30px', marginBottom: '10px'}}>🤳</div>
-                    {selfieFile ? <p style={{color: '#4ade80', fontWeight: '500', fontSize: '14px'}}>{selfieFile.name}</p> : <p style={{color: '#666', fontSize: '14px'}}>Upload Selfie</p>}
+                    <div style={{fontSize: '56px', marginBottom: '10px'}}>🤳</div>
+                    {selfieFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{selfieFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload Selfie</p>}
                   </label>
                 </div>
-                <div style={{border: '2px dashed #444', borderRadius: '15px', padding: '30px', textAlign: 'center'}}>
+                <div style={{
+                  border: '2px dashed rgba(148, 163, 184, 0.2)',
+                  borderRadius: '20px',
+                  padding: '70px',
+                  textAlign: 'center',
+                  background: 'rgba(15, 23, 42, 0.4)'
+                }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setIdFile)} style={{display: 'none'}} id="id-upload" />
                   <label htmlFor="id-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: '30px', marginBottom: '10px'}}>🪪</div>
-                    {idFile ? <p style={{color: '#4ade80', fontWeight: '500', fontSize: '14px'}}>{idFile.name}</p> : <p style={{color: '#666', fontSize: '14px'}}>Upload ID Photo</p>}
+                    <div style={{fontSize: '56px', marginBottom: '10px'}}>🪪</div>
+                    {idFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{idFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload ID Photo</p>}
                   </label>
                 </div>
               </div>
-              <div style={{display: 'flex', gap: '10px'}}>
-                <button onClick={analyzeFace} disabled={!selfieFile || !idFile || isAnalyzing} style={{flex: 1, padding: '15px', background: selfieFile && idFile && !isAnalyzing ? 'linear-gradient(to right, #22c55e, #16a34a)' : '#333', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', cursor: selfieFile && idFile && !isAnalyzing ? 'pointer' : 'not-allowed'}}>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={analyzeFace} disabled={!selfieFile || !idFile || isAnalyzing} style={{
+                  flex: 1,
+                  padding: '22px',
+                  background: selfieFile && idFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '17px',
+                  cursor: selfieFile && idFile && !isAnalyzing ? 'pointer' : 'not-allowed'
+                }}>
                   {isAnalyzing ? 'Analyzing...' : 'Compare Faces'}
                 </button>
-                <button onClick={clearAll} style={{padding: '15px 25px', background: 'rgba(255,255,255,0.1)', border: '1px solid #444', borderRadius: '10px', color: '#888', cursor: 'pointer'}}>Clear</button>
+                <button onClick={clearAll} style={{
+                  padding: '22px 36px',
+                  background: 'transparent',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  borderRadius: '10px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '15px'
+                }}>Clear</button>
               </div>
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div style={{marginTop: '20px', padding: '15px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', borderRadius: '10px', color: '#f87171', textAlign: 'center'}}>{error}</div>
+            <div style={{
+              marginTop: '25px',
+              padding: '22px',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              color: '#f87171',
+              textAlign: 'center',
+              fontSize: '15px'
+            }}>{error}</div>
           )}
 
           {/* Results */}
           {results && (
-            <div style={{marginTop: '25px', padding: '25px', borderRadius: '15px', background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: '1px solid', borderColor: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)'}}>
-              <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                <span style={{display: 'inline-block', padding: '12px 30px', borderRadius: '50px', fontSize: '22px', fontWeight: 'bold', background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: getVerdictInfo().color === 'green' ? '#4ade80' : '#f87171'}}>
+            <div style={{
+              marginTop: '30px',
+              padding: '36px',
+              borderRadius: '20px',
+              background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid',
+              borderColor: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+            }}>
+              <div style={{textAlign: 'center', marginBottom: '24px'}}>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '14px 36px',
+                  borderRadius: '50px',
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: getVerdictInfo().color === 'green' ? '#4ade80' : '#f87171'
+                }}>
                   {getVerdictInfo().color === 'green' ? '✅' : '⚠️'} {getVerdictInfo().text}
                 </span>
               </div>
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px'}}>
-                <div style={{background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '15px', textAlign: 'center'}}>
-                  <p style={{color: '#888', fontSize: '12px', margin: '0 0 5px 0'}}>Confidence</p>
-                  <p style={{fontSize: '24px', fontWeight: 'bold', margin: 0}}>{results.type === 'face' ? (results.data.similarity || 0).toFixed(1) : ((results.data.confidence || 0) * 100).toFixed(1)}%</p>
+                <div style={{background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', padding: '24px', textAlign: 'center'}}>
+                  <p style={{color: '#94a3b8', fontSize: '15px', margin: '0 0 6px 0'}}>Confidence</p>
+                  <p style={{fontSize: '28px', fontWeight: 'bold', margin: 0, color: 'white'}}>{results.type === 'face' ? (results.data.similarity || 0).toFixed(1) : ((results.data.confidence || 0) * 100).toFixed(1)}%</p>
                 </div>
-                <div style={{background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '15px', textAlign: 'center'}}>
-                  <p style={{color: '#888', fontSize: '12px', margin: '0 0 5px 0'}}>Type</p>
-                  <p style={{fontSize: '16px', fontWeight: '600', margin: 0}}>{results.type === 'video' ? 'Video' : results.type === 'document' ? 'Document' : 'Face Match'}</p>
+                <div style={{background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', padding: '24px', textAlign: 'center'}}>
+                  <p style={{color: '#94a3b8', fontSize: '15px', margin: '0 0 6px 0'}}>Type</p>
+                  <p style={{fontSize: '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.type === 'video' ? 'Video' : results.type === 'document' ? 'Document' : 'Face Match'}</p>
                 </div>
-                <div style={{background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '15px', textAlign: 'center'}}>
-                  <p style={{color: '#888', fontSize: '12px', margin: '0 0 5px 0'}}>Processing</p>
-                  <p style={{fontSize: '16px', fontWeight: '600', margin: 0}}>{results.data.frames_analyzed ? results.data.frames_analyzed + ' frames' : 'Instant'}</p>
+                <div style={{background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', padding: '24px', textAlign: 'center'}}>
+                  <p style={{color: '#94a3b8', fontSize: '15px', margin: '0 0 6px 0'}}>Processing</p>
+                  <p style={{fontSize: '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.data.frames_analyzed ? results.data.frames_analyzed + ' frames' : 'Instant'}</p>
                 </div>
               </div>
             </div>
           )}
         </div>
       </main>
+
+      {/* Footer */}
+      <footer style={{
+        textAlign: 'center',
+        padding: '40px',
+        color: '#64748b',
+        fontSize: '14px',
+        fontWeight: '500'
+      }}>
+        © 2025 KYCShield by Facti.ai
+      </footer>
     </div>
   );
 }

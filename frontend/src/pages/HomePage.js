@@ -67,7 +67,7 @@ function HomePage() {
             }}
             />
           <span style={{
-            fontSize: '28px',
+            fontSize: '36px',
             fontWeight: '600',
             color: 'white',
             letterSpacing: '-0.5px',
@@ -223,10 +223,12 @@ function HomePage() {
         }}>
           <div style={{
             width: '100%',
-            maxWidth: '750px',
+            maxWidth: '850px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            
+            transition: 'transform 0.3s ease'
           }}>
             <video
               autoPlay
@@ -236,7 +238,9 @@ function HomePage() {
               style={{
                 width: '100%',
                 height: 'auto',
-                objectFit: 'contain'
+                objectFit: 'contain',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4)'
               }}
             >
               <source src="/assets/shield-animation.mp4" type="video/mp4" />
@@ -346,7 +350,7 @@ function HomePage() {
             <h3 style={{
               fontSize: '24px',
               fontWeight: '700',
-              color: '#60a5fa',
+              color: '#a78bfa',
               margin: '0 0 16px 0'
             }}>Deepfake Detection</h3>
             <p style={{
@@ -396,7 +400,7 @@ function HomePage() {
             <h3 style={{
               fontSize: '24px',
               fontWeight: '700',
-              color: '#34d399',
+              color: '#a78bfa',
               margin: '0 0 16px 0'
             }}>Face Matching</h3>
             <p style={{
