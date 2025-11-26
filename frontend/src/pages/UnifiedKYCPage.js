@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function UnifiedKYCPage() {
@@ -10,6 +10,14 @@ function UnifiedKYCPage() {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState('');
   const navigate = useNavigate();
+  
+  // Responsive - Mobile only
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const API_BASE = 'http://localhost:8000';
   const getToken = () => localStorage.getItem('kycshield_token');
@@ -120,7 +128,7 @@ function UnifiedKYCPage() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '28px 100px',
+        padding: isMobile ? '16px 20px' : '28px 100px',
         maxWidth: '1600px',
         margin: '0 auto',
         borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
@@ -132,13 +140,13 @@ function UnifiedKYCPage() {
             style={{height: '52px', width: 'auto'}}
           />
           <span style={{
-            fontSize: '36px',
+            fontSize: isMobile ? '18px' : '36px',
             fontWeight: '600',
             color: 'white',
             letterSpacing: '-0.5px'
           }}>KYCShield</span>
         </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '20px'}}>
           <button onClick={() => navigate('/dashboard')} style={{
             padding: '16px 32px',
             background: 'transparent',
@@ -146,9 +154,10 @@ function UnifiedKYCPage() {
             borderRadius: '10px',
             color: '#94a3b8',
             cursor: 'pointer',
-            fontSize: '17px'
+            fontSize: isMobile ? '10px' : '17px',
+            padding: isMobile ? '8px 10px' : '16px 32px'
           }}>
-            ← Dashboard
+            {isMobile ? '← Back' : '← Dashboard'}
           </button>
           <button onClick={handleLogout} style={{
             padding: '16px 32px',
@@ -157,18 +166,19 @@ function UnifiedKYCPage() {
             borderRadius: '10px',
             color: '#94a3b8',
             cursor: 'pointer',
-            fontSize: '17px'
+            fontSize: isMobile ? '11px' : '17px',
+            padding: isMobile ? '8px 12px' : '16px 32px'
           }}>
-            Logout
+            {isMobile ? 'Exit' : 'Logout'}
           </button>
         </div>
       </header>
 
-      <main style={{maxWidth: '1200px', margin: '0 auto', padding: '70px 40px'}}>
+      <main style={{maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '20px 16px' : '70px 40px'}}>
         {/* Title */}
         <div style={{textAlign: 'center', marginBottom: '60px'}}>
           <h1 style={{
-            fontSize: '56px',
+            fontSize: isMobile ? '28px' : '56px',
             fontWeight: '700',
             margin: '0 0 16px 0',
             letterSpacing: '-2px'
@@ -180,13 +190,13 @@ function UnifiedKYCPage() {
             }}>Unified</span>
             <span style={{color: 'white'}}> KYC Verification</span>
           </h1>
-          <p style={{color: '#94a3b8', fontSize: '22px', margin: 0}}>
+          <p style={{color: '#94a3b8', fontSize: isMobile ? '14px' : '22px', margin: 0}}>
             Detects ProKYC and coordinated synthetic identity attacks
           </p>
         </div>
 
         {/* Upload Cards */}
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '50px'}}>
+        <div style={{display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '24px', marginBottom: '50px'}}>
           {/* Video */}
           <div style={{
             background: 'rgba(30, 41, 59, 0.4)',
@@ -196,8 +206,8 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: '56px', marginBottom: '16px'}}>🎬</div>
-            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: '22px', fontWeight: '600'}}>Liveness Video</h4>
+            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🎬</div>
+            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Liveness Video</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Deepfake Detection</p>
             <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
             <label htmlFor="video-upload" style={{
@@ -223,8 +233,8 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: '56px', marginBottom: '16px'}}>🤳</div>
-            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: '22px', fontWeight: '600'}}>Selfie Photo</h4>
+            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🤳</div>
+            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Selfie Photo</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Face Matching</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
             <label htmlFor="selfie-upload" style={{
@@ -250,8 +260,8 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: '56px', marginBottom: '16px'}}>🪪</div>
-            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: '22px', fontWeight: '600'}}>ID Document</h4>
+            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🪪</div>
+            <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>ID Document</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Fraud Detection</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />
             <label htmlFor="doc-upload" style={{
@@ -275,28 +285,30 @@ function UnifiedKYCPage() {
             onClick={runUnifiedKYC}
             disabled={!videoFile || !selfieFile || !documentFile || isAnalyzing}
             style={{
-              padding: '22px 60px',
+              padding: isMobile ? '16px 20px' : '22px 60px',
               background: videoFile && selfieFile && documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
               border: 'none',
               borderRadius: '12px',
               color: 'white',
-              fontSize: '20px',
+              fontSize: isMobile ? '14px' : '20px',
               fontWeight: '600',
+              flex: isMobile ? 2 : 'none',
               cursor: videoFile && selfieFile && documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'
             }}
           >
             {isAnalyzing ? progress || 'Analyzing...' : '🔍 Run Complete KYC Check'}
           </button>
           <button onClick={clearAll} style={{
-            padding: '22px 40px',
+            padding: isMobile ? '16px 16px' : '22px 40px',
             background: 'transparent',
             border: '1px solid rgba(148, 163, 184, 0.2)',
             borderRadius: '12px',
             color: '#94a3b8',
             cursor: 'pointer',
-            fontSize: '18px'
+            fontSize: isMobile ? '14px' : '18px',
+            flex: isMobile ? 1 : 'none'
           }}>
-            Clear All
+            Clear
           </button>
         </div>
 

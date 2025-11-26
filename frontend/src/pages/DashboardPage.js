@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function DashboardPage() {
@@ -11,6 +11,14 @@ function DashboardPage() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  
+  // Responsive
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const API_BASE = 'http://localhost:8000';
 
@@ -111,7 +119,7 @@ function DashboardPage() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '28px 100px',
+        padding: isMobile ? '16px 20px' : '28px 100px',
         maxWidth: '1600px',
         margin: '0 auto',
         borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
@@ -123,7 +131,7 @@ function DashboardPage() {
             style={{height: '48px', width: 'auto'}}
           />
           <span style={{
-            fontSize: '36px',
+            fontSize: isMobile ? '20px' : '36px',
             fontWeight: '600',
             color: 'white',
             letterSpacing: '-0.5px'
@@ -138,29 +146,30 @@ function DashboardPage() {
             color: 'white',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: '15px'
+            fontSize: isMobile ? '12px' : '15px',
+            padding: isMobile ? '10px 14px' : '16px 32px'
           }}>
-            🎯 Unified KYC
+            {isMobile ? '🎯 KYC' : '🎯 Unified KYC'}
           </button>
           <button onClick={handleLogout} style={{
-            padding: '16px 32px',
+            padding: isMobile ? '10px 14px' : '16px 32px',
             background: 'transparent',
             border: '1px solid rgba(148, 163, 184, 0.3)',
             borderRadius: '8px',
             color: '#94a3b8',
             cursor: 'pointer',
-            fontSize: '15px'
+            fontSize: isMobile ? '11px' : '15px'
           }}>
-            Logout
+            {isMobile ? 'Exit' : 'Logout'}
           </button>
         </div>
       </header>
 
-      <main style={{maxWidth: '1100px', margin: '0 auto', padding: '70px 40px'}}>
+      <main style={{maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '20px 16px' : '70px 40px'}}>
         {/* Page Title */}
         <div style={{textAlign: 'center', marginBottom: '40px'}}>
           <h1 style={{
-            fontSize: '56px',
+            fontSize: isMobile ? '28px' : '56px',
             fontWeight: '700',
             margin: '0 0 16px 0',
             letterSpacing: '-1px'
@@ -168,7 +177,7 @@ function DashboardPage() {
             <span style={{color: '#60a5fa'}}>Detection</span>
             <span style={{color: 'white'}}> Dashboard</span>
           </h1>
-          <p style={{color: '#94a3b8', fontSize: '22px', margin: 0}}>
+          <p style={{color: '#94a3b8', fontSize: isMobile ? '14px' : '22px', margin: 0}}>
             Test individual detection capabilities
           </p>
         </div>
@@ -180,7 +189,7 @@ function DashboardPage() {
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); clearAll(); }}
               style={{
-                padding: '18px 36px',
+                padding: isMobile ? '10px 14px' : '18px 36px',
                 background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
                 border: activeTab === tab.id ? '1px solid ' + tab.color : '1px solid rgba(148, 163, 184, 0.2)',
                 borderRadius: '10px',
@@ -201,7 +210,7 @@ function DashboardPage() {
           background: 'rgba(30, 41, 59, 0.4)',
           border: '1px solid rgba(148, 163, 184, 0.1)',
           borderRadius: '24px',
-          padding: '50px'
+          padding: isMobile ? '20px' : '50px'
         }}>
 
           {/* Video Tab */}
@@ -212,7 +221,7 @@ function DashboardPage() {
               <div style={{
                 border: '2px dashed rgba(148, 163, 184, 0.2)',
                 borderRadius: '20px',
-                padding: '70px',
+                padding: isMobile ? '30px' : '70px',
                 textAlign: 'center',
                 marginBottom: '35px',
                 background: 'rgba(15, 23, 42, 0.4)'
@@ -258,7 +267,7 @@ function DashboardPage() {
               <div style={{
                 border: '2px dashed rgba(148, 163, 184, 0.2)',
                 borderRadius: '20px',
-                padding: '70px',
+                padding: isMobile ? '30px' : '70px',
                 textAlign: 'center',
                 marginBottom: '35px',
                 background: 'rgba(15, 23, 42, 0.4)'
@@ -305,26 +314,26 @@ function DashboardPage() {
                 <div style={{
                   border: '2px dashed rgba(148, 163, 184, 0.2)',
                   borderRadius: '20px',
-                  padding: '70px',
+                  padding: isMobile ? '30px' : '70px',
                   textAlign: 'center',
                   background: 'rgba(15, 23, 42, 0.4)'
                 }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
                   <label htmlFor="selfie-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: '56px', marginBottom: '10px'}}>🤳</div>
+                    <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '10px'}}>🤳</div>
                     {selfieFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{selfieFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload Selfie</p>}
                   </label>
                 </div>
                 <div style={{
                   border: '2px dashed rgba(148, 163, 184, 0.2)',
                   borderRadius: '20px',
-                  padding: '70px',
+                  padding: isMobile ? '30px' : '70px',
                   textAlign: 'center',
                   background: 'rgba(15, 23, 42, 0.4)'
                 }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setIdFile)} style={{display: 'none'}} id="id-upload" />
                   <label htmlFor="id-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: '56px', marginBottom: '10px'}}>🪪</div>
+                    <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '10px'}}>🪪</div>
                     {idFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{idFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload ID Photo</p>}
                   </label>
                 </div>
@@ -400,11 +409,11 @@ function DashboardPage() {
                 </div>
                 <div style={{background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', padding: '24px', textAlign: 'center'}}>
                   <p style={{color: '#94a3b8', fontSize: '15px', margin: '0 0 6px 0'}}>Type</p>
-                  <p style={{fontSize: '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.type === 'video' ? 'Video' : results.type === 'document' ? 'Document' : 'Face Match'}</p>
+                  <p style={{fontSize: isMobile ? '14px' : '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.type === 'video' ? 'Video' : results.type === 'document' ? 'Document' : 'Face Match'}</p>
                 </div>
                 <div style={{background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', padding: '24px', textAlign: 'center'}}>
                   <p style={{color: '#94a3b8', fontSize: '15px', margin: '0 0 6px 0'}}>Processing</p>
-                  <p style={{fontSize: '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.data.frames_analyzed ? results.data.frames_analyzed + ' frames' : 'Instant'}</p>
+                  <p style={{fontSize: isMobile ? '14px' : '22px', fontWeight: '600', margin: 0, color: 'white'}}>{results.data.frames_analyzed ? results.data.frames_analyzed + ' frames' : 'Instant'}</p>
                 </div>
               </div>
             </div>
