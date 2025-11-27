@@ -6,7 +6,7 @@ function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const navigate = useNavigate();
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = 'https://api.kycshield.ai';
 
   // Responsive hook
   useEffect(() => {

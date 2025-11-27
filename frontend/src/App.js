@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -7,11 +7,6 @@ import UnifiedKYCPage from './pages/UnifiedKYCPage';
 import AboutPage from './pages/AboutPage';
 import UseCasesPage from './pages/UseCasesPage';
 import ContactPage from './pages/ContactPage';
-
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem('kycshield_token');
-  return token ? children : <Navigate to="/" replace />;
-}
 
 function App() {
   return (
@@ -22,16 +17,8 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/use-cases" element={<UseCasesPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-            <DashboardPage />
-          </PrivateRoute>
-        } />
-        <Route path="/unified" element={
-          <PrivateRoute>
-            <UnifiedKYCPage />
-          </PrivateRoute>
-        } />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/unified" element={<UnifiedKYCPage />} />
       </Routes>
     </Router>
   );

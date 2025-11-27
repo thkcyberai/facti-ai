@@ -8,7 +8,7 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = 'https://api.kycshield.ai';
 
   const handleLogin = async (e) => {
     e.preventDefault();

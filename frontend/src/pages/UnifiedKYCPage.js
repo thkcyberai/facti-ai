@@ -19,7 +19,7 @@ function UnifiedKYCPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = 'https://api.kycshield.ai';
   const getToken = () => localStorage.getItem('kycshield_token');
 
   const handleLogout = () => {
