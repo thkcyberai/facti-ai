@@ -122,7 +122,7 @@ function UnifiedKYCPage() {
   };
 
   return (
-    <div style={{minHeight: '100vh', background: '#0c1222', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
+    <div style={{minHeight: '100vh', background: '#010a13', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
       {/* Header - Matching HomePage/Dashboard */}
       <header style={{
         display: 'flex',
@@ -206,7 +206,7 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🎬</div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /><circle cx="9" cy="12" r="2" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Liveness Video</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Deepfake Detection</p>
             <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
@@ -233,7 +233,7 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🤳</div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><circle cx="12" cy="10" r="3" /><path d="M12 17v.01" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Selfie Photo</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Face Matching</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
@@ -260,7 +260,7 @@ function UnifiedKYCPage() {
             textAlign: 'center',
             transition: 'all 0.2s'
           }}>
-            <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '16px'}}>🪪</div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4" /><path d="M14 14h4" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>ID Document</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Fraud Detection</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />

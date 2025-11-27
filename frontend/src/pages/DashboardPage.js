@@ -107,13 +107,13 @@ function DashboardPage() {
   };
 
   const tabs = [
-    { id: 'video', label: 'Video Deepfake', icon: '📹', color: '#a78bfa' },
-    { id: 'document', label: 'Document Fraud', icon: '📄', color: '#a78bfa' },
-    { id: 'face', label: 'Face Matching', icon: '👤', color: '#a78bfa' },
+    { id: 'video', label: 'Video Deepfake', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /></svg>, color: '#a78bfa' },
+    { id: 'document', label: 'Document Fraud', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg>, color: '#a78bfa' },
+    { id: 'face', label: 'Face Matching', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>, color: '#a78bfa' },
   ];
 
   return (
-    <div style={{minHeight: '100vh', background: '#0c1222', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
+    <div style={{minHeight: '100vh', background: '#010a13', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
       {/* Header - Matching HomePage */}
       <header style={{
         display: 'flex',
@@ -216,7 +216,7 @@ function DashboardPage() {
           {/* Video Tab */}
           {activeTab === 'video' && (
             <div>
-              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>📹 Video Deepfake Detection</h3>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /></svg> Video Deepfake Detection</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload a video to detect AI-generated deepfakes with 99.90% accuracy.</p>
               <div style={{
                 border: '2px dashed rgba(148, 163, 184, 0.2)',
@@ -228,7 +228,7 @@ function DashboardPage() {
               }}>
                 <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
                 <label htmlFor="video-upload" style={{cursor: 'pointer'}}>
-                  <div style={{fontSize: '64px', marginBottom: '12px'}}>📤</div>
+                  <div style={{marginBottom: '12px'}}><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg></div>
                   {videoFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '15px'}}>{videoFile.name}</p> : <p style={{color: '#64748b', fontSize: '15px'}}>Drop video or click to upload</p>}
                 </label>
               </div>
@@ -262,7 +262,7 @@ function DashboardPage() {
           {/* Document Tab */}
           {activeTab === 'document' && (
             <div>
-              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>📄 Document Fraud Detection</h3>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg> Document Fraud Detection</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload an ID document to detect synthetic or tampered documents with 100% accuracy.</p>
               <div style={{
                 border: '2px dashed rgba(148, 163, 184, 0.2)',
@@ -274,7 +274,7 @@ function DashboardPage() {
               }}>
                 <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />
                 <label htmlFor="doc-upload" style={{cursor: 'pointer'}}>
-                  <div style={{fontSize: '64px', marginBottom: '12px'}}>📤</div>
+                  <div style={{marginBottom: '12px'}}><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg></div>
                   {documentFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '15px'}}>{documentFile.name}</p> : <p style={{color: '#64748b', fontSize: '15px'}}>Drop document or click to upload</p>}
                 </label>
               </div>
@@ -308,7 +308,7 @@ function DashboardPage() {
           {/* Face Tab */}
           {activeTab === 'face' && (
             <div>
-              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600'}}>👤 Face Matching</h3>
+              <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="#a78bfa" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> Face Matching</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Compare a selfie with an ID photo to verify identity with 96.94% accuracy.</p>
               <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px'}}>
                 <div style={{
@@ -320,7 +320,7 @@ function DashboardPage() {
                 }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
                   <label htmlFor="selfie-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '10px'}}>🤳</div>
+                    <div style={{marginBottom: '10px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><circle cx="12" cy="10" r="3" /><path d="M12 17v.01" /></svg></div>
                     {selfieFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{selfieFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload Selfie</p>}
                   </label>
                 </div>
@@ -333,7 +333,7 @@ function DashboardPage() {
                 }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setIdFile)} style={{display: 'none'}} id="id-upload" />
                   <label htmlFor="id-upload" style={{cursor: 'pointer'}}>
-                    <div style={{fontSize: isMobile ? '28px' : '56px', marginBottom: '10px'}}>🪪</div>
+                    <div style={{marginBottom: '10px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4" /><path d="M14 14h4" /></svg></div>
                     {idFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{idFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload ID Photo</p>}
                   </label>
                 </div>
