@@ -8,6 +8,10 @@ function ContactPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [formData, setFormData] = useState({name: '', email: '', company: '', industry: '', message: ''});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const API_URL = 'https://kycshield.ai/api/v1';
 
   useEffect(() => {
     const handleResize = () => {
@@ -19,7 +23,42 @@ function ContactPage() {
   }, []);
 
   const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
-  const handleSubmit = (e) => { e.preventDefault(); console.log('Form submitted:', formData); setSubmitted(true); };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(API_URL + '/contact/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          industry: formData.industry,
+          message: formData.message,
+          form_type: 'contact'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setSubmitted(true);
+      } else {
+        setError(data.detail || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      setError('Unable to submit form. Please try again later.');
+      console.error('Form submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const inputStyle = {width: '100%', padding: '14px 16px', background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '8px', color: 'white', fontSize: '16px', outline: 'none', boxSizing: 'border-box'};
 
@@ -65,7 +104,7 @@ function ContactPage() {
       {/* Main Content */}
       <section style={{padding: isMobile ? '40px 20px' : '80px 60px', maxWidth: '1200px', margin: '0 auto'}}>
         <div style={{display: 'grid', gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 1fr', gap: isMobile ? '32px' : '80px'}}>
-          
+
           {/* Left Side - Info */}
           <div>
             <h1 style={{fontSize: isMobile ? '32px' : '48px', fontWeight: '800', marginBottom: '24px'}}>
@@ -77,8 +116,8 @@ function ContactPage() {
 
             <div style={{marginBottom: '32px'}}>
               {[
-                {icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>, label: 'Email', value: 'contact@trusi.ai'},
-                {icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>, label: 'Website', value: 'trusi.ai'},
+                {icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>, label: 'Email', value: 'contact@kycshield.ai'},
+                {icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>, label: 'Website', value: 'kycshield.ai'},
                 {icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>, label: 'Location', value: 'United States'}
               ].map((item, i) => (
                 <div key={i} style={{display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px'}}>
@@ -115,6 +154,11 @@ function ContactPage() {
             {!submitted ? (
               <>
                 <h2 style={{fontSize: isMobile ? '20px' : '24px', fontWeight: '700', marginBottom: '24px'}}>Request a Demo</h2>
+                {error && (
+                  <div style={{background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', color: '#f87171', fontSize: '14px'}}>
+                    {error}
+                  </div>
+                )}
                 <form onSubmit={handleSubmit}>
                   <div style={{marginBottom: '20px'}}>
                     <label style={{display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px'}}>Full Name *</label>
@@ -145,7 +189,23 @@ function ContactPage() {
                     <label style={{display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px'}}>Message</label>
                     <textarea name="message" value={formData.message} onChange={handleChange} rows={4} style={{...inputStyle, resize: 'vertical'}} placeholder="Tell us about your needs..." />
                   </div>
-                  <button type="submit" style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '18px', fontWeight: '600', cursor: 'pointer'}}>Request Demo</button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    style={{
+                      width: '100%', 
+                      padding: '16px', 
+                      background: isSubmitting ? '#6b7280' : 'linear-gradient(135deg, #a78bfa, #7c3aed)', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      color: 'white', 
+                      fontSize: '18px', 
+                      fontWeight: '600', 
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Request Demo'}
+                  </button>
                 </form>
               </>
             ) : (
@@ -162,7 +222,7 @@ function ContactPage() {
 
       {/* Footer */}
       <footer style={{padding: isMobile ? '24px 20px' : '40px 60px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', color: '#64748b'}}>
-        <p style={{fontSize: isMobile ? '14px' : '16px'}}>© 2025 KYCShield by Facti.ai. All rights reserved.</p>
+        <p style={{fontSize: isMobile ? '14px' : '16px'}}>© 2025 KYCShield by Trusi.ai. All rights reserved.</p>
       </footer>
     </div>
   );
