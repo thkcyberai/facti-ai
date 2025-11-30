@@ -1,0 +1,35 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files (keep .env.example as template)
+.env
+
+# Logs
+logs/
+*.log
+
+# Uploads (user data)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test datasets (too large)
+datasets/
+
+# Backup files
+*.backup*
+*.bak

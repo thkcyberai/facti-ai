@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc, kyc_complete, video_deepfake, synthetic_face
+from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc, kyc_complete, video_deepfake, contact, newsletter
 from app.middleware.rate_limiter import rate_limit_middleware
 from app.middleware.input_validator import input_validation_middleware
 import os
@@ -43,7 +43,7 @@ app.openapi = custom_openapi
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://facti.ai", "https://trusi.ai"],
+    allow_origins=["http://localhost:3000", "https://kycshield.ai", "https://www.kycshield.ai"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,7 +61,8 @@ app.include_router(document.router, prefix="/api/v1/document", tags=["Document V
 app.include_router(face_match.router, prefix="/api/v1/face", tags=["Face Matching"])
 app.include_router(liveness.router, prefix="/api/v1/liveness", tags=["Liveness Detection"])
 app.include_router(fraud.router, prefix="/api/v1/fraud", tags=["Fraud Detection"])
-app.include_router(synthetic_face.router, prefix="/api/v1/synthetic-face", tags=["Synthetic Face Detection"])
+app.include_router(contact.router, prefix="/api/v1/contact", tags=["Contact"])
+app.include_router(newsletter.router, prefix="/api/v1/newsletter", tags=["Newsletter"])
 @app.get("/")
 async def root():
     return {
@@ -72,18 +73,16 @@ async def root():
             "video_deepfake_detection": "99.90% accuracy",
             "document_fraud_detection": "100% accuracy",
             "face_matching": "96.94% accuracy",
-            "synthetic_face_detection": "CNNDetection enabled",
-            "prokyc_detection": "enabled",
             "services": [
                 "kyc_complete_verification",
                 "video_deepfake_detection",
                 "document_fraud_detection",
-                "synthetic_face_detection",
                 "face_matching",
                 "kyc_verification",
                 "authentication",
                 "liveness_detection",
-                "fraud_detection"
+                "fraud_detection",
+                "contact_form"
             ]
         }
     }
@@ -93,9 +92,7 @@ async def health_check():
         "status": "healthy",
         "deepfake_model": "XceptionNet 99.90%",
         "document_fraud_model": "XceptionNet 100%",
-        "face_matching": "DeepFace 96.94%",
-        "synthetic_face_detection": "CNNDetection ResNet50",
-        "prokyc_detection": "enabled"
+        "face_matching": "DeepFace 96.94%"
     }
 if __name__ == "__main__":
     import uvicorn
