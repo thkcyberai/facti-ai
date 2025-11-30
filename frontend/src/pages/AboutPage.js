@@ -158,6 +158,16 @@ function AboutPage() {
         </div>
       </section>
 
+      {/* Ready to Protect Section */}
+      <section style={{padding: isMobile ? "40px 20px" : "80px 60px", background: "rgba(15, 23, 42, 0.3)", textAlign: "center"}}>
+        <h2 style={{fontSize: isMobile ? "28px" : "40px", fontWeight: "700", marginBottom: "16px"}}>Ready to Protect Your Business?</h2>
+        <p style={{fontSize: isMobile ? "16px" : "18px", color: "#94a3b8", marginBottom: "32px"}}>See KYCShield in action with a personalized demo tailored to your industry.</p>
+        <div style={{display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap"}}>
+          <button onClick={() => navigate("/dashboard")} style={{padding: "14px 28px", background: "linear-gradient(135deg, #a78bfa, #7c3aed)", border: "none", borderRadius: "8px", color: "white", fontSize: "16px", fontWeight: "600", cursor: "pointer"}}>Try Demo</button>
+          <button onClick={() => navigate("/contact?type=sales")} style={{padding: "14px 28px", background: "transparent", border: "2px solid #a78bfa", borderRadius: "8px", color: "#a78bfa", fontSize: "16px", fontWeight: "600", cursor: "pointer"}}>Contact Sales</button>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer style={{padding: isMobile ? '24px 20px' : '40px 60px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', color: '#64748b'}}>
         <p style={{fontSize: isMobile ? '14px' : '16px'}}>© 2025 KYCShield by Facti.ai. All rights reserved.</p>

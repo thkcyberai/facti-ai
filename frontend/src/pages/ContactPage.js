@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 function ContactPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const formType = searchParams.get('type') === 'sales' ? 'sales' : 'contact';
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,7 +13,7 @@ function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_URL = 'https://kycshield.ai/api/v1';
+  const API_URL = 'https://api.kycshield.ai/api/v1';
 
   useEffect(() => {
     const handleResize = () => {
@@ -41,7 +43,7 @@ function ContactPage() {
           company: formData.company,
           industry: formData.industry,
           message: formData.message,
-          form_type: 'contact'
+          form_type: formType
         }),
       });
       
@@ -212,7 +214,7 @@ function ContactPage() {
               <div style={{textAlign: 'center', padding: '40px 0'}}>
                 <div style={{fontSize: '64px', marginBottom: '24px'}}>✅</div>
                 <h2 style={{fontSize: '28px', fontWeight: '700', marginBottom: '16px', color: '#10b981'}}>Thank You!</h2>
-                <p style={{fontSize: '18px', color: '#94a3b8', marginBottom: '32px'}}>We've received your request and will be in touch within 24 hours.</p>
+                <p style={{fontSize: '18px', color: '#94a3b8', marginBottom: '32px'}}>We've received your request and will be in touch within 72 hours.</p>
                 <button onClick={() => navigate('/dashboard')} style={{padding: '14px 28px', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '16px', fontWeight: '600', cursor: 'pointer'}}>Try Demo Now</button>
               </div>
             )}

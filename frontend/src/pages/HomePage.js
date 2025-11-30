@@ -286,17 +286,17 @@ function HomePage() {
               alignItems: 'center',
               gap: '10px',
               padding: '18px 36px',
-              background: 'transparent',
-              border: '1px solid rgba(96, 165, 250, 0.5)',
+              background: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+              border: 'none',
               borderRadius: '8px',
-              color: '#60a5fa',
+              color: 'white',
               fontSize: '17px',
               fontWeight: '500',
               cursor: isReady ? 'pointer' : 'not-allowed',
               transition: 'all 0.3s ease'
             }}
           >
-            Try Now <span>→</span>
+            Try Demo <span>→</span>
           </button>
         </div>
 

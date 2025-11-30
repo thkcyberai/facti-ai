@@ -107,7 +107,7 @@ function UseCasesPage() {
         <p style={{fontSize: isMobile ? '14px' : '18px', color: '#94a3b8', marginBottom: '32px', maxWidth: '600px', margin: '0 auto 32px'}}>See KYCShield in action with a personalized demo tailored to your industry.</p>
         <div style={{display: 'flex', gap: '16px', justifyContent: 'center', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center'}}>
           <button onClick={() => navigate('/dashboard')} style={{padding: '14px 28px', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '16px', fontWeight: '600', cursor: 'pointer', width: isMobile ? '100%' : 'auto'}}>Try Demo</button>
-          <button onClick={() => navigate('/contact')} style={{padding: '14px 28px', background: 'transparent', border: '2px solid #a78bfa', borderRadius: '8px', color: '#a78bfa', fontSize: '16px', fontWeight: '600', cursor: 'pointer', width: isMobile ? '100%' : 'auto'}}>Contact Sales</button>
+          <button onClick={() => navigate('/contact?type=sales')} style={{padding: '14px 28px', background: 'transparent', border: '2px solid #a78bfa', borderRadius: '8px', color: '#a78bfa', fontSize: '16px', fontWeight: '600', cursor: 'pointer', width: isMobile ? '100%' : 'auto'}}>Contact Sales</button>
         </div>
       </section>
 
