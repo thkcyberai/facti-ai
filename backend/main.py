@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc, kyc_complete, video_deepfake, contact, newsletter
+from app.api.endpoints import auth, document, face_match, liveness, fraud, kyc, kyc_complete, video_deepfake, contact, newsletter, beta
 from app.middleware.rate_limiter import rate_limit_middleware
 from app.middleware.input_validator import input_validation_middleware
 import os
+
 load_dotenv()
+
 app = FastAPI(
     title="KYCShield API",
     description="AI-Powered Identity Verification with 99.90% Deepfake Detection",
@@ -14,8 +16,10 @@ app = FastAPI(
         "usePkceWithAuthorizationCodeGrant": True,
     },
 )
+
 # Add security schemes for Swagger UI
 from fastapi.openapi.utils import get_openapi
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -39,7 +43,9 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 app.openapi = custom_openapi
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -48,12 +54,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Rate Limiting - Protect against abuse and DDoS
 app.middleware("http")(rate_limit_middleware)
+
 # Input Validation - Validate all uploads and inputs
 app.middleware("http")(input_validation_middleware)
+
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(beta.router, prefix="/api/v1/beta", tags=["Beta Access"])
 app.include_router(kyc.router, prefix="/api/v1/kyc", tags=["KYC Verification"])
 app.include_router(kyc_complete.router, prefix="/api/v1/kyc", tags=["Complete KYC Verification"])
 app.include_router(video_deepfake.router, prefix="/api/v1/video-deepfake", tags=["Video Deepfake Detection"])
@@ -63,6 +73,7 @@ app.include_router(liveness.router, prefix="/api/v1/liveness", tags=["Liveness D
 app.include_router(fraud.router, prefix="/api/v1/fraud", tags=["Fraud Detection"])
 app.include_router(contact.router, prefix="/api/v1/contact", tags=["Contact"])
 app.include_router(newsletter.router, prefix="/api/v1/newsletter", tags=["Newsletter"])
+
 @app.get("/")
 async def root():
     return {
@@ -86,6 +97,7 @@ async def root():
             ]
         }
     }
+
 @app.get("/health")
 async def health_check():
     return {
@@ -94,6 +106,7 @@ async def health_check():
         "document_fraud_model": "XceptionNet 100%",
         "face_matching": "DeepFace 96.94%"
     }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
