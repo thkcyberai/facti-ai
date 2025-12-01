@@ -11,7 +11,14 @@ function DashboardPage() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  
+
+  // Feedback state
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackSelected, setFeedbackSelected] = useState(null);
+  const [actualLabel, setActualLabel] = useState(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+
   // Responsive
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
@@ -36,6 +43,11 @@ function DashboardPage() {
     setIdFile(null);
     setResults(null);
     setError(null);
+    setShowFeedback(false);
+    setFeedbackSelected(null);
+    setActualLabel(null);
+    setFeedbackSubmitted(false);
+    setFeedbackMessage('');
   };
 
   const handleFileChange = (setter) => (e) => {
@@ -46,6 +58,7 @@ function DashboardPage() {
   const analyzeVideo = async () => {
     if (!videoFile) { setError('Please select a video'); return; }
     setIsAnalyzing(true); setError(null); setResults(null);
+    setShowFeedback(false); setFeedbackSubmitted(false);
     try {
       const formData = new FormData();
       formData.append('video', videoFile);
@@ -56,6 +69,7 @@ function DashboardPage() {
       });
       const data = await res.json();
       setResults({ type: 'video', data });
+      if (data.usage_log_id) setShowFeedback(true);
     } catch (err) { setError('Error: ' + err.message); }
     finally { setIsAnalyzing(false); }
   };
@@ -63,6 +77,7 @@ function DashboardPage() {
   const analyzeDocument = async () => {
     if (!documentFile) { setError('Please select a document'); return; }
     setIsAnalyzing(true); setError(null); setResults(null);
+    setShowFeedback(false); setFeedbackSubmitted(false);
     try {
       const formData = new FormData();
       formData.append('document', documentFile);
@@ -73,6 +88,7 @@ function DashboardPage() {
       });
       const data = await res.json();
       setResults({ type: 'document', data });
+      if (data.usage_log_id) setShowFeedback(true);
     } catch (err) { setError('Error: ' + err.message); }
     finally { setIsAnalyzing(false); }
   };
@@ -80,6 +96,7 @@ function DashboardPage() {
   const analyzeFace = async () => {
     if (!selfieFile || !idFile) { setError('Please select both selfie and ID'); return; }
     setIsAnalyzing(true); setError(null); setResults(null);
+    setShowFeedback(false); setFeedbackSubmitted(false);
     try {
       const formData = new FormData();
       formData.append('selfie', selfieFile);
@@ -91,8 +108,40 @@ function DashboardPage() {
       });
       const data = await res.json();
       setResults({ type: 'face', data });
+      if (data.usage_log_id) setShowFeedback(true);
     } catch (err) { setError('Error: ' + err.message); }
     finally { setIsAnalyzing(false); }
+  };
+
+  const submitFeedback = async () => {
+    if (!results?.data?.usage_log_id || !feedbackSelected) return;
+    try {
+      const res = await fetch(API_BASE + '/api/v1/beta/feedback', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + getToken(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          usage_log_id: results.data.usage_log_id,
+          user_feedback: feedbackSelected,
+          user_actual_label: actualLabel
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedbackSubmitted(true);
+        setFeedbackMessage('Thank you! Your feedback helps improve our AI.');
+      } else {
+        setFeedbackMessage(data.detail || 'Feedback submission failed');
+      }
+    } catch (err) {
+      setFeedbackMessage('Error submitting feedback');
+    }
+  };
+
+  const skipFeedback = () => {
+    setShowFeedback(false);
   };
 
   const getVerdictInfo = () => {
@@ -112,9 +161,183 @@ function DashboardPage() {
     { id: 'face', label: 'Face Matching', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>, color: '#a78bfa' },
   ];
 
+  // Feedback Modal Component
+  const FeedbackModal = () => {
+    if (!showFeedback || feedbackSubmitted) return null;
+    
+    return (
+      <div style={{
+        marginTop: '24px',
+        padding: '24px',
+        background: 'rgba(124, 58, 237, 0.1)',
+        border: '1px solid rgba(124, 58, 237, 0.3)',
+        borderRadius: '16px',
+        textAlign: 'center'
+      }}>
+        <h4 style={{ color: '#a78bfa', margin: '0 0 16px 0', fontSize: '18px' }}>
+          🎯 Did we get it right?
+        </h4>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '20px' }}>
+          <button
+            onClick={() => setFeedbackSelected('correct')}
+            style={{
+              padding: '16px 24px',
+              background: feedbackSelected === 'correct' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(30, 41, 59, 0.6)',
+              border: feedbackSelected === 'correct' ? '2px solid #22c55e' : '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <div style={{ fontSize: '32px', marginBottom: '4px' }}>👍</div>
+            <div style={{ color: '#22c55e', fontWeight: '600', fontSize: '14px' }}>Correct</div>
+          </button>
+          
+          <button
+            onClick={() => setFeedbackSelected('wrong')}
+            style={{
+              padding: '16px 24px',
+              background: feedbackSelected === 'wrong' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(30, 41, 59, 0.6)',
+              border: feedbackSelected === 'wrong' ? '2px solid #ef4444' : '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <div style={{ fontSize: '32px', marginBottom: '4px' }}>👎</div>
+            <div style={{ color: '#ef4444', fontWeight: '600', fontSize: '14px' }}>Wrong</div>
+          </button>
+          
+          <button
+            onClick={() => setFeedbackSelected('unsure')}
+            style={{
+              padding: '16px 24px',
+              background: feedbackSelected === 'unsure' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(30, 41, 59, 0.6)',
+              border: feedbackSelected === 'unsure' ? '2px solid #fbbf24' : '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <div style={{ fontSize: '32px', marginBottom: '4px' }}>🤷</div>
+            <div style={{ color: '#fbbf24', fontWeight: '600', fontSize: '14px' }}>Not Sure</div>
+          </button>
+        </div>
+
+        {feedbackSelected && (
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '12px' }}>
+              (Optional) What was it really?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => setActualLabel('real')}
+                style={{
+                  padding: '10px 20px',
+                  background: actualLabel === 'real' ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+                  border: actualLabel === 'real' ? '1px solid #22c55e' : '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '8px',
+                  color: actualLabel === 'real' ? '#22c55e' : '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Real
+              </button>
+              <button
+                onClick={() => setActualLabel('fake')}
+                style={{
+                  padding: '10px 20px',
+                  background: actualLabel === 'fake' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                  border: actualLabel === 'fake' ? '1px solid #ef4444' : '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '8px',
+                  color: actualLabel === 'fake' ? '#ef4444' : '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Fake
+              </button>
+              <button
+                onClick={() => setActualLabel('unknown')}
+                style={{
+                  padding: '10px 20px',
+                  background: actualLabel === 'unknown' ? 'rgba(148, 163, 184, 0.2)' : 'transparent',
+                  border: actualLabel === 'unknown' ? '1px solid #94a3b8' : '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '8px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Don't Know
+              </button>
+            </div>
+          </div>
+        )}
+
+        <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '16px' }}>
+          Your feedback helps train our AI!
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+          <button
+            onClick={submitFeedback}
+            disabled={!feedbackSelected}
+            style={{
+              padding: '12px 32px',
+              background: feedbackSelected ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              fontWeight: '600',
+              cursor: feedbackSelected ? 'pointer' : 'not-allowed',
+              fontSize: '14px'
+            }}
+          >
+            Submit
+          </button>
+          <button
+            onClick={skipFeedback}
+            style={{
+              padding: '12px 24px',
+              background: 'transparent',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              borderRadius: '8px',
+              color: '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Skip for now
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Feedback Success Message
+  const FeedbackSuccess = () => {
+    if (!feedbackSubmitted) return null;
+    return (
+      <div style={{
+        marginTop: '24px',
+        padding: '20px',
+        background: 'rgba(34, 197, 94, 0.1)',
+        border: '1px solid rgba(34, 197, 94, 0.3)',
+        borderRadius: '12px',
+        textAlign: 'center'
+      }}>
+        <span style={{ fontSize: '24px', marginRight: '8px' }}>✅</span>
+        <span style={{ color: '#4ade80', fontWeight: '500' }}>{feedbackMessage}</span>
+      </div>
+    );
+  };
+
   return (
     <div style={{minHeight: '100vh', background: '#010a13', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
-      {/* Header - Matching HomePage */}
+      {/* Header */}
       <header style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -125,29 +348,19 @@ function DashboardPage() {
         borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
       }}>
         <div style={{display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer'}} onClick={() => navigate('/')}>
-          <img 
-            src="/assets/KYCLogo.png" 
-            alt="KYCShield Logo"
-            style={{height: '48px', width: 'auto'}}
-          />
-          <span style={{
-            fontSize: isMobile ? '20px' : '36px',
-            fontWeight: '600',
-            color: 'white',
-            letterSpacing: '-0.5px'
-          }}>KYCShield</span>
+          <img src="/assets/KYCLogo.png" alt="KYCShield Logo" style={{height: '48px', width: 'auto'}} />
+          <span style={{ fontSize: isMobile ? '20px' : '36px', fontWeight: '600', color: 'white', letterSpacing: '-0.5px' }}>KYCShield</span>
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
           <button onClick={() => navigate('/unified')} style={{
-            padding: '16px 32px',
+            padding: isMobile ? '10px 14px' : '16px 32px',
             background: 'linear-gradient(135deg, #c084fc, #a855f7, #7c3aed)',
             border: 'none',
             borderRadius: '8px',
             color: 'white',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: isMobile ? '12px' : '15px',
-            padding: isMobile ? '10px 14px' : '16px 32px'
+            fontSize: isMobile ? '12px' : '15px'
           }}>
             {isMobile ? '🎯 KYC' : '🎯 Unified KYC'}
           </button>
@@ -166,66 +379,39 @@ function DashboardPage() {
       </header>
 
       <main style={{maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '20px 16px' : '70px 40px'}}>
-        {/* Page Title */}
         <div style={{textAlign: 'center', marginBottom: '40px'}}>
-          <h1 style={{
-            fontSize: isMobile ? '28px' : '56px',
-            fontWeight: '700',
-            margin: '0 0 16px 0',
-            letterSpacing: '-1px'
-          }}>
+          <h1 style={{ fontSize: isMobile ? '28px' : '56px', fontWeight: '700', margin: '0 0 16px 0', letterSpacing: '-1px' }}>
             <span style={{color: '#60a5fa'}}>Detection</span>
             <span style={{color: 'white'}}> Dashboard</span>
           </h1>
-          <p style={{color: '#94a3b8', fontSize: isMobile ? '14px' : '22px', margin: 0}}>
-            Test individual detection capabilities
-          </p>
+          <p style={{color: '#94a3b8', fontSize: isMobile ? '14px' : '22px', margin: 0}}>Test individual detection capabilities</p>
         </div>
 
-        {/* Tabs */}
         <div style={{display: 'flex', gap: '16px', marginBottom: '50px', justifyContent: 'center'}}>
           {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); clearAll(); }}
-              style={{
-                padding: isMobile ? '10px 14px' : '18px 36px',
-                background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: activeTab === tab.id ? '1px solid ' + tab.color : '1px solid rgba(148, 163, 184, 0.2)',
-                borderRadius: '10px',
-                color: activeTab === tab.id ? tab.color : '#94a3b8',
-                cursor: 'pointer',
-                fontSize: '17px',
-                fontWeight: activeTab === tab.id ? '600' : '500',
-                transition: 'all 0.2s'
-              }}
-            >
+            <button key={tab.id} onClick={() => { setActiveTab(tab.id); clearAll(); }} style={{
+              padding: isMobile ? '10px 14px' : '18px 36px',
+              background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+              border: activeTab === tab.id ? '1px solid ' + tab.color : '1px solid rgba(148, 163, 184, 0.2)',
+              borderRadius: '10px',
+              color: activeTab === tab.id ? tab.color : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '17px',
+              fontWeight: activeTab === tab.id ? '600' : '500',
+              transition: 'all 0.2s'
+            }}>
               {tab.icon} {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Detection Card */}
-        <div style={{
-          background: 'rgba(30, 41, 59, 0.4)',
-          border: '1px solid rgba(148, 163, 184, 0.1)',
-          borderRadius: '24px',
-          padding: isMobile ? '20px' : '50px'
-        }}>
+        <div style={{ background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(148, 163, 184, 0.1)', borderRadius: '24px', padding: isMobile ? '20px' : '50px' }}>
 
-          {/* Video Tab */}
           {activeTab === 'video' && (
             <div>
               <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /></svg> Video Deepfake Detection</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload a video to detect AI-generated deepfakes with 99.90% accuracy.</p>
-              <div style={{
-                border: '2px dashed rgba(148, 163, 184, 0.2)',
-                borderRadius: '20px',
-                padding: isMobile ? '30px' : '70px',
-                textAlign: 'center',
-                marginBottom: '35px',
-                background: 'rgba(15, 23, 42, 0.4)'
-              }}>
+              <div style={{ border: '2px dashed rgba(148, 163, 184, 0.2)', borderRadius: '20px', padding: isMobile ? '30px' : '70px', textAlign: 'center', marginBottom: '35px', background: 'rgba(15, 23, 42, 0.4)' }}>
                 <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
                 <label htmlFor="video-upload" style={{cursor: 'pointer'}}>
                   <div style={{marginBottom: '12px'}}><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg></div>
@@ -233,45 +419,19 @@ function DashboardPage() {
                 </label>
               </div>
               <div style={{display: 'flex', gap: '12px'}}>
-                <button onClick={analyzeVideo} disabled={!videoFile || isAnalyzing} style={{
-                  flex: 1,
-                  padding: '22px',
-                  background: videoFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '17px',
-                  cursor: videoFile && !isAnalyzing ? 'pointer' : 'not-allowed'
-                }}>
+                <button onClick={analyzeVideo} disabled={!videoFile || isAnalyzing} style={{ flex: 1, padding: '22px', background: videoFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '17px', cursor: videoFile && !isAnalyzing ? 'pointer' : 'not-allowed' }}>
                   {isAnalyzing ? 'Analyzing...' : 'Analyze Video'}
                 </button>
-                <button onClick={clearAll} style={{
-                  padding: '22px 36px',
-                  background: 'transparent',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  borderRadius: '10px',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '15px'
-                }}>Clear</button>
+                <button onClick={clearAll} style={{ padding: '22px 36px', background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '10px', color: '#94a3b8', cursor: 'pointer', fontSize: '15px' }}>Clear</button>
               </div>
             </div>
           )}
 
-          {/* Document Tab */}
           {activeTab === 'document' && (
             <div>
               <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></svg> Document Fraud Detection</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Upload an ID document to detect synthetic or tampered documents with 100% accuracy.</p>
-              <div style={{
-                border: '2px dashed rgba(148, 163, 184, 0.2)',
-                borderRadius: '20px',
-                padding: isMobile ? '30px' : '70px',
-                textAlign: 'center',
-                marginBottom: '35px',
-                background: 'rgba(15, 23, 42, 0.4)'
-              }}>
+              <div style={{ border: '2px dashed rgba(148, 163, 184, 0.2)', borderRadius: '20px', padding: isMobile ? '30px' : '70px', textAlign: 'center', marginBottom: '35px', background: 'rgba(15, 23, 42, 0.4)' }}>
                 <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />
                 <label htmlFor="doc-upload" style={{cursor: 'pointer'}}>
                   <div style={{marginBottom: '12px'}}><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg></div>
@@ -279,58 +439,27 @@ function DashboardPage() {
                 </label>
               </div>
               <div style={{display: 'flex', gap: '12px'}}>
-                <button onClick={analyzeDocument} disabled={!documentFile || isAnalyzing} style={{
-                  flex: 1,
-                  padding: '22px',
-                  background: documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '17px',
-                  cursor: documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'
-                }}>
+                <button onClick={analyzeDocument} disabled={!documentFile || isAnalyzing} style={{ flex: 1, padding: '22px', background: documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '17px', cursor: documentFile && !isAnalyzing ? 'pointer' : 'not-allowed' }}>
                   {isAnalyzing ? 'Analyzing...' : 'Analyze Document'}
                 </button>
-                <button onClick={clearAll} style={{
-                  padding: '22px 36px',
-                  background: 'transparent',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  borderRadius: '10px',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '15px'
-                }}>Clear</button>
+                <button onClick={clearAll} style={{ padding: '22px 36px', background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '10px', color: '#94a3b8', cursor: 'pointer', fontSize: '15px' }}>Clear</button>
               </div>
             </div>
           )}
 
-          {/* Face Tab */}
           {activeTab === 'face' && (
             <div>
               <h3 style={{margin: '0 0 12px 0', color: '#a78bfa', fontSize: '28px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '12px'}}><svg width="32" height="32" viewBox="0 0 24 24" fill="#a78bfa" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> Face Matching</h3>
               <p style={{color: '#94a3b8', marginBottom: '35px', fontSize: '15px'}}>Compare a selfie with an ID photo to verify identity with 96.94% accuracy.</p>
               <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px'}}>
-                <div style={{
-                  border: '2px dashed rgba(148, 163, 184, 0.2)',
-                  borderRadius: '20px',
-                  padding: isMobile ? '30px' : '70px',
-                  textAlign: 'center',
-                  background: 'rgba(15, 23, 42, 0.4)'
-                }}>
+                <div style={{ border: '2px dashed rgba(148, 163, 184, 0.2)', borderRadius: '20px', padding: isMobile ? '30px' : '70px', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)' }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
                   <label htmlFor="selfie-upload" style={{cursor: 'pointer'}}>
                     <div style={{marginBottom: '10px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><circle cx="12" cy="10" r="3" /><path d="M12 17v.01" /></svg></div>
                     {selfieFile ? <p style={{color: '#a78bfa', fontWeight: '500', fontSize: '14px'}}>{selfieFile.name}</p> : <p style={{color: '#64748b', fontSize: '14px'}}>Upload Selfie</p>}
                   </label>
                 </div>
-                <div style={{
-                  border: '2px dashed rgba(148, 163, 184, 0.2)',
-                  borderRadius: '20px',
-                  padding: isMobile ? '30px' : '70px',
-                  textAlign: 'center',
-                  background: 'rgba(15, 23, 42, 0.4)'
-                }}>
+                <div style={{ border: '2px dashed rgba(148, 163, 184, 0.2)', borderRadius: '20px', padding: isMobile ? '30px' : '70px', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)' }}>
                   <input type="file" accept="image/*" onChange={handleFileChange(setIdFile)} style={{display: 'none'}} id="id-upload" />
                   <label htmlFor="id-upload" style={{cursor: 'pointer'}}>
                     <div style={{marginBottom: '10px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4" /><path d="M14 14h4" /></svg></div>
@@ -339,66 +468,22 @@ function DashboardPage() {
                 </div>
               </div>
               <div style={{display: 'flex', gap: '12px'}}>
-                <button onClick={analyzeFace} disabled={!selfieFile || !idFile || isAnalyzing} style={{
-                  flex: 1,
-                  padding: '22px',
-                  background: selfieFile && idFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '17px',
-                  cursor: selfieFile && idFile && !isAnalyzing ? 'pointer' : 'not-allowed'
-                }}>
+                <button onClick={analyzeFace} disabled={!selfieFile || !idFile || isAnalyzing} style={{ flex: 1, padding: '22px', background: selfieFile && idFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '17px', cursor: selfieFile && idFile && !isAnalyzing ? 'pointer' : 'not-allowed' }}>
                   {isAnalyzing ? 'Analyzing...' : 'Compare Faces'}
                 </button>
-                <button onClick={clearAll} style={{
-                  padding: '22px 36px',
-                  background: 'transparent',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  borderRadius: '10px',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: '15px'
-                }}>Clear</button>
+                <button onClick={clearAll} style={{ padding: '22px 36px', background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '10px', color: '#94a3b8', cursor: 'pointer', fontSize: '15px' }}>Clear</button>
               </div>
             </div>
           )}
 
-          {/* Error */}
           {error && (
-            <div style={{
-              marginTop: '25px',
-              padding: '22px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px',
-              color: '#f87171',
-              textAlign: 'center',
-              fontSize: '15px'
-            }}>{error}</div>
+            <div style={{ marginTop: '25px', padding: '22px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', color: '#f87171', textAlign: 'center', fontSize: '15px' }}>{error}</div>
           )}
 
-          {/* Results */}
           {results && (
-            <div style={{
-              marginTop: '30px',
-              padding: '36px',
-              borderRadius: '20px',
-              background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid',
-              borderColor: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-            }}>
+            <div style={{ marginTop: '30px', padding: '36px', borderRadius: '20px', background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: '1px solid', borderColor: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
               <div style={{textAlign: 'center', marginBottom: '24px'}}>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '14px 36px',
-                  borderRadius: '50px',
-                  fontSize: '28px',
-                  fontWeight: 'bold',
-                  background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: getVerdictInfo().color === 'green' ? '#4ade80' : '#f87171'
-                }}>
+                <span style={{ display: 'inline-block', padding: '14px 36px', borderRadius: '50px', fontSize: '28px', fontWeight: 'bold', background: getVerdictInfo().color === 'green' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: getVerdictInfo().color === 'green' ? '#4ade80' : '#f87171' }}>
                   {getVerdictInfo().color === 'green' ? '✅' : '⚠️'} {getVerdictInfo().text}
                 </span>
               </div>
@@ -418,17 +503,13 @@ function DashboardPage() {
               </div>
             </div>
           )}
+
+          <FeedbackModal />
+          <FeedbackSuccess />
         </div>
       </main>
 
-      {/* Footer */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '40px',
-        color: '#64748b',
-        fontSize: '14px',
-        fontWeight: '500'
-      }}>
+      <footer style={{ textAlign: 'center', padding: '40px', color: '#64748b', fontSize: '14px', fontWeight: '500' }}>
         © 2025 KYCShield by Facti.ai
       </footer>
     </div>

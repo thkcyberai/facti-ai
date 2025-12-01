@@ -10,8 +10,12 @@ function UnifiedKYCPage() {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState('');
   const navigate = useNavigate();
-  
-  // Responsive - Mobile only
+
+  // Feedback state
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({});
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState({});
+
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -34,13 +38,29 @@ function UnifiedKYCPage() {
     setResults(null);
     setError(null);
     setProgress('');
+    setShowFeedback(false);
+    setFeedbackData({});
+    setFeedbackSubmitted({});
   };
 
   const handleFileChange = (setter) => (e) => {
     const file = e.target.files[0];
-    if (file) {
-      console.log("File selected:", file.name, file.size);
-      setter(file);
+    if (file) setter(file);
+  };
+
+  const submitFeedback = async (service, usageLogId, feedback, actualLabel) => {
+    try {
+      const res = await fetch(API_BASE + '/api/v1/beta/feedback', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usage_log_id: usageLogId, user_feedback: feedback, user_actual_label: actualLabel })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedbackSubmitted(prev => ({ ...prev, [service]: true }));
+      }
+    } catch (err) {
+      console.error('Feedback error:', err);
     }
   };
 
@@ -53,6 +73,9 @@ function UnifiedKYCPage() {
     setIsAnalyzing(true);
     setError(null);
     setResults(null);
+    setShowFeedback(false);
+    setFeedbackData({});
+    setFeedbackSubmitted({});
 
     const token = getToken();
     const analysisResults = { video: null, document: null, face: null };
@@ -62,6 +85,7 @@ function UnifiedKYCPage() {
       setProgress('Analyzing video for deepfakes...');
       const videoForm = new FormData();
       videoForm.append('video', videoFile);
+      videoForm.append('page_source', 'unified_kyc');
       const videoRes = await fetch(API_BASE + '/api/v1/video-deepfake/verify', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token },
@@ -73,6 +97,7 @@ function UnifiedKYCPage() {
       setProgress('Checking document authenticity...');
       const docForm = new FormData();
       docForm.append('document', documentFile);
+      docForm.append('page_source', 'unified_kyc');
       const docRes = await fetch(API_BASE + '/api/v1/document/verify', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token },
@@ -85,6 +110,7 @@ function UnifiedKYCPage() {
       const faceForm = new FormData();
       faceForm.append('selfie', selfieFile);
       faceForm.append('id_photo', documentFile);
+      faceForm.append('page_source', 'unified_kyc');
       const faceRes = await fetch(API_BASE + '/api/v1/face/verify', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token },
@@ -94,15 +120,12 @@ function UnifiedKYCPage() {
 
       setProgress('');
 
-      // Calculate overall verdict
       const videoOK = analysisResults.video.is_real || analysisResults.video.verdict === 'REAL';
       const docOK = analysisResults.document.verdict === 'GENUINE' || analysisResults.document.is_real;
       const faceOK = analysisResults.face.match || analysisResults.face.verified || analysisResults.face.is_match;
 
       const overallPass = videoOK && docOK && faceOK;
       const failCount = [!videoOK, !docOK, !faceOK].filter(Boolean).length;
-
-      // ProKYC detection: if ALL fail, likely coordinated attack
       const proKYCDetected = failCount >= 2;
 
       setResults({
@@ -113,6 +136,11 @@ function UnifiedKYCPage() {
         face: { ...analysisResults.face, passed: faceOK }
       });
 
+      // Show feedback if any usage_log_id exists
+      if (analysisResults.video.usage_log_id || analysisResults.document.usage_log_id || analysisResults.face.usage_log_id) {
+        setShowFeedback(true);
+      }
+
     } catch (err) {
       setError('Error: ' + err.message);
       setProgress('');
@@ -121,74 +149,85 @@ function UnifiedKYCPage() {
     }
   };
 
+  // Feedback Component for each service
+  const ServiceFeedback = ({ service, label, usageLogId }) => {
+    const [selected, setSelected] = useState(null);
+    const [actualLabel, setActualLabel] = useState(null);
+
+    if (!usageLogId || feedbackSubmitted[service]) {
+      return feedbackSubmitted[service] ? (
+        <div style={{ color: '#4ade80', fontSize: '14px', marginTop: '8px' }}>✅ Thanks!</div>
+      ) : null;
+    }
+
+    return (
+      <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(124, 58, 237, 0.1)', borderRadius: '10px' }}>
+        <p style={{ color: '#a78bfa', fontSize: '13px', margin: '0 0 8px 0' }}>Was this correct?</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
+          {['correct', 'wrong', 'unsure'].map(fb => (
+            <button key={fb} onClick={() => setSelected(fb)} style={{
+              padding: '6px 12px',
+              background: selected === fb ? (fb === 'correct' ? 'rgba(34,197,94,0.3)' : fb === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(251,191,36,0.3)') : 'rgba(30,41,59,0.6)',
+              border: selected === fb ? `1px solid ${fb === 'correct' ? '#22c55e' : fb === 'wrong' ? '#ef4444' : '#fbbf24'}` : '1px solid rgba(148,163,184,0.2)',
+              borderRadius: '6px', cursor: 'pointer', fontSize: '18px'
+            }}>
+              {fb === 'correct' ? '👍' : fb === 'wrong' ? '👎' : '🤷'}
+            </button>
+          ))}
+        </div>
+        {selected && (
+          <>
+            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '8px' }}>
+              {['real', 'fake', 'unknown'].map(lbl => (
+                <button key={lbl} onClick={() => setActualLabel(lbl)} style={{
+                  padding: '4px 10px', fontSize: '12px',
+                  background: actualLabel === lbl ? 'rgba(167,139,250,0.2)' : 'transparent',
+                  border: actualLabel === lbl ? '1px solid #a78bfa' : '1px solid rgba(148,163,184,0.3)',
+                  borderRadius: '4px', color: actualLabel === lbl ? '#a78bfa' : '#94a3b8', cursor: 'pointer'
+                }}>
+                  {lbl.charAt(0).toUpperCase() + lbl.slice(1)}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => submitFeedback(service, usageLogId, selected, actualLabel)} style={{
+              padding: '6px 16px', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+              border: 'none', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: 'pointer'
+            }}>Submit</button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{minHeight: '100vh', background: '#010a13', color: 'white', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'}}>
-      {/* Header - Matching HomePage/Dashboard */}
       <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: isMobile ? '16px 20px' : '28px 100px',
-        maxWidth: '1600px',
-        margin: '0 auto',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: isMobile ? '16px 20px' : '28px 100px', maxWidth: '1600px', margin: '0 auto',
         borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
       }}>
         <div style={{display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer'}} onClick={() => navigate('/')}>
-          <img 
-            src="/assets/KYCLogo.png" 
-            alt="KYCShield Logo"
-            style={{height: '52px', width: 'auto'}}
-          />
-          <span style={{
-            fontSize: isMobile ? '18px' : '36px',
-            fontWeight: '600',
-            color: 'white',
-            letterSpacing: '-0.5px'
-          }}>KYCShield</span>
+          <img src="/assets/KYCLogo.png" alt="KYCShield Logo" style={{height: '52px', width: 'auto'}} />
+          <span style={{ fontSize: isMobile ? '18px' : '36px', fontWeight: '600', color: 'white' }}>KYCShield</span>
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '20px'}}>
           <button onClick={() => navigate('/dashboard')} style={{
-            padding: '16px 32px',
-            background: 'transparent',
-            border: '1px solid rgba(148, 163, 184, 0.3)',
-            borderRadius: '10px',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: isMobile ? '10px' : '17px',
-            padding: isMobile ? '8px 10px' : '16px 32px'
-          }}>
-            {isMobile ? '← Back' : '← Dashboard'}
-          </button>
+            padding: isMobile ? '10px 12px' : '18px 32px',
+            background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.3)',
+            borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', fontSize: isMobile ? '11px' : '17px'
+          }}>← Dashboard</button>
           <button onClick={handleLogout} style={{
-            padding: '16px 32px',
-            background: 'transparent',
-            border: '1px solid rgba(148, 163, 184, 0.3)',
-            borderRadius: '10px',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: isMobile ? '11px' : '17px',
-            padding: isMobile ? '8px 12px' : '16px 32px'
-          }}>
-            {isMobile ? 'Exit' : 'Logout'}
-          </button>
+            padding: isMobile ? '10px 12px' : '18px 32px',
+            background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.3)',
+            borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', fontSize: isMobile ? '11px' : '17px'
+          }}>Logout</button>
         </div>
       </header>
 
-      <main style={{maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '20px 16px' : '70px 40px'}}>
-        {/* Title */}
-        <div style={{textAlign: 'center', marginBottom: '60px'}}>
-          <h1 style={{
-            fontSize: isMobile ? '28px' : '56px',
-            fontWeight: '700',
-            margin: '0 0 16px 0',
-            letterSpacing: '-2px'
-          }}>
-            <span style={{
-              background: 'linear-gradient(135deg, #c084fc, #a855f7, #7c3aed)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>Unified</span>
-            <span style={{color: 'white'}}> KYC Verification</span>
+      <main style={{maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '30px 16px' : '70px 40px'}}>
+        <div style={{textAlign: 'center', marginBottom: '50px'}}>
+          <h1 style={{ fontSize: isMobile ? '28px' : '56px', fontWeight: '700', margin: '0 0 16px 0' }}>
+            <span style={{color: '#a78bfa'}}>Unified</span> KYC Verification
           </h1>
           <p style={{color: '#94a3b8', fontSize: isMobile ? '14px' : '22px', margin: 0}}>
             Detects ProKYC and coordinated synthetic identity attacks
@@ -196,229 +235,152 @@ function UnifiedKYCPage() {
         </div>
 
         {/* Upload Cards */}
-        <div style={{display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '24px', marginBottom: '50px'}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px'}}>
           {/* Video */}
           <div style={{
             background: 'rgba(30, 41, 59, 0.4)',
             border: videoFile ? '2px solid #a78bfa' : '1px solid rgba(148, 163, 184, 0.1)',
-            borderRadius: '20px',
-            padding: '40px 30px',
-            textAlign: 'center',
-            transition: 'all 0.2s'
+            borderRadius: '20px', padding: '40px 30px', textAlign: 'center'
           }}>
-            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /><circle cx="9" cy="12" r="2" /></svg></div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5"><rect x="2" y="6" width="14" height="12" rx="2" /><path d="M16 10l4-2v8l-4-2v-4z" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Liveness Video</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Deepfake Detection</p>
             <input type="file" accept="video/*" onChange={handleFileChange(setVideoFile)} style={{display: 'none'}} id="video-upload" />
             <label htmlFor="video-upload" style={{
-              display: 'block',
-              padding: '16px',
-              background: 'rgba(15, 23, 42, 0.5)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontSize: '15px',
-              color: videoFile ? '#a78bfa' : '#64748b',
-              fontWeight: videoFile ? '500' : '400'
-            }}>
-              {videoFile ? videoFile.name : 'Click to upload'}
-            </label>
+              display: 'block', padding: '16px', background: 'rgba(15, 23, 42, 0.5)',
+              borderRadius: '12px', cursor: 'pointer', fontSize: '15px',
+              color: videoFile ? '#a78bfa' : '#64748b', fontWeight: videoFile ? '500' : '400'
+            }}>{videoFile ? videoFile.name : 'Click to upload'}</label>
           </div>
 
           {/* Selfie */}
           <div style={{
             background: 'rgba(30, 41, 59, 0.4)',
             border: selfieFile ? '2px solid #a78bfa' : '1px solid rgba(148, 163, 184, 0.1)',
-            borderRadius: '20px',
-            padding: '40px 30px',
-            textAlign: 'center',
-            transition: 'all 0.2s'
+            borderRadius: '20px', padding: '40px 30px', textAlign: 'center'
           }}>
-            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><circle cx="12" cy="10" r="3" /><path d="M12 17v.01" /></svg></div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><circle cx="12" cy="10" r="3" /><path d="M12 17v.01" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>Selfie Photo</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Face Matching</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setSelfieFile)} style={{display: 'none'}} id="selfie-upload" />
             <label htmlFor="selfie-upload" style={{
-              display: 'block',
-              padding: '16px',
-              background: 'rgba(15, 23, 42, 0.5)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontSize: '15px',
-              color: selfieFile ? '#a78bfa' : '#64748b',
-              fontWeight: selfieFile ? '500' : '400'
-            }}>
-              {selfieFile ? selfieFile.name : 'Click to upload'}
-            </label>
+              display: 'block', padding: '16px', background: 'rgba(15, 23, 42, 0.5)',
+              borderRadius: '12px', cursor: 'pointer', fontSize: '15px',
+              color: selfieFile ? '#a78bfa' : '#64748b', fontWeight: selfieFile ? '500' : '400'
+            }}>{selfieFile ? selfieFile.name : 'Click to upload'}</label>
           </div>
 
           {/* Document */}
           <div style={{
             background: 'rgba(30, 41, 59, 0.4)',
             border: documentFile ? '2px solid #a78bfa' : '1px solid rgba(148, 163, 184, 0.1)',
-            borderRadius: '20px',
-            padding: '40px 30px',
-            textAlign: 'center',
-            transition: 'all 0.2s'
+            borderRadius: '20px', padding: '40px 30px', textAlign: 'center'
           }}>
-            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4" /><path d="M14 14h4" /></svg></div>
+            <div style={{marginBottom: '16px'}}><svg width={isMobile ? "28" : "56"} height={isMobile ? "28" : "56"} viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4" /><path d="M14 14h4" /></svg></div>
             <h4 style={{margin: '0 0 8px 0', color: '#a78bfa', fontSize: isMobile ? '14px' : '22px', fontWeight: '600'}}>ID Document</h4>
             <p style={{color: '#94a3b8', fontSize: '15px', marginBottom: '24px'}}>Fraud Detection</p>
             <input type="file" accept="image/*" onChange={handleFileChange(setDocumentFile)} style={{display: 'none'}} id="doc-upload" />
             <label htmlFor="doc-upload" style={{
-              display: 'block',
-              padding: '16px',
-              background: 'rgba(15, 23, 42, 0.5)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontSize: '15px',
-              color: documentFile ? '#a78bfa' : '#64748b',
-              fontWeight: documentFile ? '500' : '400'
-            }}>
-              {documentFile ? documentFile.name : 'Click to upload'}
-            </label>
+              display: 'block', padding: '16px', background: 'rgba(15, 23, 42, 0.5)',
+              borderRadius: '12px', cursor: 'pointer', fontSize: '15px',
+              color: documentFile ? '#a78bfa' : '#64748b', fontWeight: documentFile ? '500' : '400'
+            }}>{documentFile ? documentFile.name : 'Click to upload'}</label>
           </div>
         </div>
 
         {/* Buttons */}
         <div style={{display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '50px'}}>
-          <button
-            onClick={runUnifiedKYC}
-            disabled={!videoFile || !selfieFile || !documentFile || isAnalyzing}
-            style={{
-              padding: isMobile ? '16px 20px' : '22px 60px',
-              background: videoFile && selfieFile && documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              fontSize: isMobile ? '14px' : '20px',
-              fontWeight: '600',
-              flex: isMobile ? 2 : 'none',
-              cursor: videoFile && selfieFile && documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'
-            }}
-          >
-            {isAnalyzing ? progress || 'Analyzing...' : '🔍 Run Complete KYC Check'}
-          </button>
+          <button onClick={runUnifiedKYC} disabled={!videoFile || !selfieFile || !documentFile || isAnalyzing} style={{
+            padding: isMobile ? '16px 20px' : '22px 60px',
+            background: videoFile && selfieFile && documentFile && !isAnalyzing ? 'linear-gradient(135deg, #a78bfa, #7c3aed)' : 'rgba(51, 65, 85, 0.5)',
+            border: 'none', borderRadius: '12px', color: 'white', fontSize: isMobile ? '14px' : '20px', fontWeight: '600',
+            cursor: videoFile && selfieFile && documentFile && !isAnalyzing ? 'pointer' : 'not-allowed'
+          }}>{isAnalyzing ? progress || 'Analyzing...' : '🔍 Run Complete KYC Check'}</button>
           <button onClick={clearAll} style={{
-            padding: isMobile ? '16px 16px' : '22px 40px',
-            background: 'transparent',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
-            borderRadius: '12px',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: isMobile ? '14px' : '18px',
-            flex: isMobile ? 1 : 'none'
-          }}>
-            Clear
-          </button>
+            padding: isMobile ? '16px 16px' : '22px 40px', background: 'transparent',
+            border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '12px',
+            color: '#94a3b8', cursor: 'pointer', fontSize: isMobile ? '14px' : '18px'
+          }}>Clear</button>
         </div>
 
-        {/* Error */}
         {error && (
-          <div style={{
-            padding: '20px',
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '14px',
-            color: '#f87171',
-            textAlign: 'center',
-            marginBottom: '30px',
-            fontSize: '18px'
-          }}>{error}</div>
+          <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '14px', color: '#f87171', textAlign: 'center', marginBottom: '30px', fontSize: '18px' }}>{error}</div>
         )}
 
-        {/* Results */}
         {results && (
           <div>
             {/* Overall Verdict */}
             <div style={{
-              padding: '40px',
-              borderRadius: '24px',
+              padding: '40px', borderRadius: '24px',
               background: results.overall === 'PASS' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              border: '2px solid',
-              borderColor: results.overall === 'PASS' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-              textAlign: 'center',
-              marginBottom: '30px'
+              border: '2px solid', borderColor: results.overall === 'PASS' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+              textAlign: 'center', marginBottom: '30px'
             }}>
-              <div style={{fontSize: '64px', marginBottom: '16px'}}>
-                {results.overall === 'PASS' ? '✅' : '🚫'}
-              </div>
+              <div style={{fontSize: '64px', marginBottom: '16px'}}>{results.overall === 'PASS' ? '✅' : '🚫'}</div>
               <h2 style={{margin: '0 0 16px 0', fontSize: '48px', fontWeight: '700', color: results.overall === 'PASS' ? '#4ade80' : '#f87171'}}>
                 KYC {results.overall}
               </h2>
               {results.proKYCDetected && (
-                <div style={{
-                  display: 'inline-block',
-                  padding: '12px 28px',
-                  background: 'rgba(239, 68, 68, 0.25)',
-                  borderRadius: '50px',
-                  color: '#fca5a5',
-                  fontSize: '18px',
-                  fontWeight: '600'
-                }}>
+                <div style={{ display: 'inline-block', padding: '12px 28px', background: 'rgba(239, 68, 68, 0.25)',
+                  borderRadius: '50px', color: '#fca5a5', fontSize: '18px', fontWeight: '600' }}>
                   ⚠️ ProKYC Attack Pattern Detected
                 </div>
               )}
             </div>
 
-            {/* Individual Results */}
+            {/* Individual Results with Feedback */}
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px'}}>
               {/* Video Result */}
               <div style={{
                 background: 'rgba(30, 41, 59, 0.4)',
-                border: '1px solid',
-                borderColor: results.video.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                borderRadius: '20px',
-                padding: '30px',
-                textAlign: 'center'
+                border: '1px solid', borderColor: results.video.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                borderRadius: '20px', padding: '30px', textAlign: 'center'
               }}>
                 <div style={{fontSize: '36px', marginBottom: '14px'}}>{results.video.passed ? '✅' : '❌'}</div>
                 <h4 style={{margin: '0 0 10px 0', color: '#a78bfa', fontSize: '20px', fontWeight: '600'}}>Video Deepfake</h4>
-                <p style={{color: results.video.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>{results.video.verdict || (results.video.is_real ? 'REAL' : 'FAKE')}</p>
+                <p style={{color: results.video.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>
+                  {results.video.verdict || (results.video.is_real ? 'REAL' : 'FAKE')}
+                </p>
                 <p style={{color: '#94a3b8', fontSize: '16px', margin: 0}}>{((results.video.confidence || 0) * 100).toFixed(1)}% confidence</p>
+                {showFeedback && <ServiceFeedback service="video" label="Video" usageLogId={results.video.usage_log_id} />}
               </div>
 
               {/* Face Result */}
               <div style={{
                 background: 'rgba(30, 41, 59, 0.4)',
-                border: '1px solid',
-                borderColor: results.face.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                borderRadius: '20px',
-                padding: '30px',
-                textAlign: 'center'
+                border: '1px solid', borderColor: results.face.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                borderRadius: '20px', padding: '30px', textAlign: 'center'
               }}>
                 <div style={{fontSize: '36px', marginBottom: '14px'}}>{results.face.passed ? '✅' : '❌'}</div>
                 <h4 style={{margin: '0 0 10px 0', color: '#a78bfa', fontSize: '20px', fontWeight: '600'}}>Face Match</h4>
-                <p style={{color: results.face.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>{results.face.passed ? 'MATCH' : 'NO MATCH'}</p>
+                <p style={{color: results.face.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>
+                  {results.face.passed ? 'MATCH' : 'NO MATCH'}
+                </p>
                 <p style={{color: '#94a3b8', fontSize: '16px', margin: 0}}>{(results.face.similarity || 0).toFixed(1)}% similarity</p>
+                {showFeedback && <ServiceFeedback service="face" label="Face" usageLogId={results.face.usage_log_id} />}
               </div>
 
               {/* Document Result */}
               <div style={{
                 background: 'rgba(30, 41, 59, 0.4)',
-                border: '1px solid',
-                borderColor: results.document.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                borderRadius: '20px',
-                padding: '30px',
-                textAlign: 'center'
+                border: '1px solid', borderColor: results.document.passed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                borderRadius: '20px', padding: '30px', textAlign: 'center'
               }}>
                 <div style={{fontSize: '36px', marginBottom: '14px'}}>{results.document.passed ? '✅' : '❌'}</div>
                 <h4 style={{margin: '0 0 10px 0', color: '#a78bfa', fontSize: '20px', fontWeight: '600'}}>Document</h4>
-                <p style={{color: results.document.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>{results.document.verdict || (results.document.is_real ? 'GENUINE' : 'FRAUDULENT')}</p>
+                <p style={{color: results.document.passed ? '#4ade80' : '#f87171', fontWeight: '700', margin: '8px 0', fontSize: '22px'}}>
+                  {results.document.verdict || (results.document.is_real ? 'GENUINE' : 'FRAUDULENT')}
+                </p>
                 <p style={{color: '#94a3b8', fontSize: '16px', margin: 0}}>{((results.document.confidence || 0) * 100).toFixed(1)}% confidence</p>
+                {showFeedback && <ServiceFeedback service="document" label="Document" usageLogId={results.document.usage_log_id} />}
               </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '48px',
-        color: '#64748b',
-        fontSize: '15px',
-        fontWeight: '500'
-      }}>
+      <footer style={{ textAlign: 'center', padding: '48px', color: '#64748b', fontSize: '15px', fontWeight: '500' }}>
         © 2025 KYCShield by Facti.ai
       </footer>
     </div>
