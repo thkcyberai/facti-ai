@@ -3,28 +3,29 @@ Video Deepfake Detection API Endpoint - Secured
 Detect AI-generated/synthetic videos using XceptionNet (99.90% accuracy)
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request, Form
+from sqlalchemy.orm import Session
 from app.services.video_deepfake_detector import get_detector
 from app.middleware.jwt_auth import require_jwt_token
 from app.middleware.rate_limiter import rate_limiter
 from app.utils.audit_logger import audit_logger
+from app.utils.beta_usage import log_beta_usage, get_beta_tester_id_from_auth, get_access_code_from_auth
+from app.core.database import get_db
 import os
 import uuid
+import time
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional
 
 router = APIRouter()
 
-# Temporary upload directory
 UPLOAD_DIR = "uploads/temp"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Max file size: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
 
 def get_client_ip(request: Request) -> str:
-    """Extract client IP from request"""
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -35,82 +36,69 @@ def get_client_ip(request: Request) -> str:
 async def verify_video(
     request: Request,
     video: UploadFile = File(..., description="Video file (MP4, MOV) for deepfake detection"),
-    auth: Union[dict, None] = Depends(require_jwt_token)
+    page_source: Optional[str] = Form(default="dashboard"),
+    auth: Union[dict, None] = Depends(require_jwt_token),
+    db: Session = Depends(get_db)
 ):
-    """
-    Detect video deepfakes using AI (XceptionNet model - 99.90% accuracy)
-
-    **Authentication Required:** JWT Bearer token
-
-    **Upload:** Video file → Returns deepfake detection result
-
-    **Detects:**
-    - Face2Face attacks
-    - FaceSwap attacks
-    - Deepfakes
-    - NeuralTextures
-    - Face-Reenactment
-
-    **Security:**
-    - Rate limited (60 requests/min per IP)
-    - All attempts logged for audit
-    - JWT authentication required
-    - File size limit: 50MB
-    """
-
     client_ip = get_client_ip(request)
+    user_agent = request.headers.get("User-Agent", "unknown")
     user_id = auth.get('user_id', 'unknown') if auth else 'unknown'
+    beta_tester_id = get_beta_tester_id_from_auth(auth)
+    access_code = get_access_code_from_auth(auth)
+    start_time = time.time()
 
-    # Check rate limit
     is_allowed, msg = rate_limiter.check_rate_limit(request)
     if not is_allowed:
         audit_logger.log_rate_limit_exceeded(client_ip, "/video-deepfake/verify")
         raise HTTPException(status_code=429, detail=msg)
 
-    # Validate file type
     allowed_types = ['video/mp4', 'video/mpeg', 'video/quicktime']
     if video.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400, 
-            detail="Video must be MP4 or MOV format"
-        )
+        raise HTTPException(status_code=400, detail="Video must be MP4 or MOV format")
 
-    # Generate unique filename
     filename = f"{uuid.uuid4()}_{video.filename}"
     file_path = os.path.join(UPLOAD_DIR, filename)
 
     try:
-        # Read file content
         content = await video.read()
-        
-        # Validate file size
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=413, 
-                detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB"
-            )
 
-        # Save uploaded file
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB")
+
         with open(file_path, "wb") as f:
             f.write(content)
 
-        # Log verification attempt
-        audit_logger.log_verification_request(
-            user_id=user_id,
-            ip_address=client_ip,
-            verification_type="video_deepfake"
-        )
+        audit_logger.log_verification_request(user_id=user_id, ip_address=client_ip, verification_type="video_deepfake")
 
-        # Get detector and run deepfake detection
         detector = get_detector()
         result = detector.detect(file_path)
+        processing_time_ms = int((time.time() - start_time) * 1000)
 
-        # Add metadata
         result['timestamp'] = datetime.utcnow().isoformat()
         result['filename'] = video.filename
         result['file_size_bytes'] = len(content)
 
-        # Log result
+        usage_log_id = None
+        if beta_tester_id:
+            usage_log_id = log_beta_usage(
+                db=db,
+                beta_tester_id=beta_tester_id,
+                verification_type="deepfake",
+                verdict=result.get('verdict', 'UNKNOWN'),
+                confidence=result.get('confidence', 0.0),
+                processing_time_ms=processing_time_ms,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                page_source=page_source or "dashboard",
+                service_type="video_deepfake",
+                access_code=access_code,
+                file_content=content,
+                file_size=len(content),
+                file_type=video.content_type,
+                original_filename=video.filename
+            )
+            result['usage_log_id'] = usage_log_id
+
         audit_logger.log_event(
             event_type="video_deepfake_result",
             user_id=user_id,
@@ -119,7 +107,8 @@ async def verify_video(
                 "verdict": result.get('verdict', 'UNKNOWN'),
                 "is_real": result.get('is_real', False),
                 "confidence": result.get('confidence', 0.0),
-                "fake_probability": result.get('fake_probability', 0.0)
+                "fake_probability": result.get('fake_probability', 0.0),
+                "usage_log_id": usage_log_id
             }
         )
 
@@ -128,20 +117,10 @@ async def verify_video(
     except HTTPException:
         raise
     except Exception as e:
-        # Log error
-        audit_logger.log_event(
-            event_type="video_deepfake_error",
-            user_id=user_id,
-            ip_address=client_ip,
-            details={"error": str(e)}
-        )
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Video deepfake detection failed: {str(e)}"
-        )
+        audit_logger.log_event(event_type="video_deepfake_error", user_id=user_id, ip_address=client_ip, details={"error": str(e)})
+        raise HTTPException(status_code=500, detail=f"Video deepfake detection failed: {str(e)}")
 
     finally:
-        # Clean up temporary file
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -151,22 +130,12 @@ async def verify_video(
 
 @router.get("/model-info")
 async def get_model_info():
-    """
-    Get information about the video deepfake detection model
-
-    **No authentication required** - Public model information
-    """
     detector = get_detector()
     return detector.get_model_info()
 
 
 @router.get("/health")
 async def health_check():
-    """
-    Check if video deepfake detection service is ready
-
-    **No authentication required** - Public health check
-    """
     return {
         "status": "healthy",
         "service": "video_deepfake_detector",
@@ -178,11 +147,5 @@ async def health_check():
             "audit_logging": "enabled",
             "max_file_size_mb": MAX_FILE_SIZE / (1024*1024)
         },
-        "detects": [
-            "Face2Face attacks",
-            "FaceSwap attacks",
-            "Deepfakes",
-            "NeuralTextures",
-            "Face-Reenactment"
-        ]
+        "detects": ["Face2Face attacks", "FaceSwap attacks", "Deepfakes", "NeuralTextures", "Face-Reenactment"]
     }
