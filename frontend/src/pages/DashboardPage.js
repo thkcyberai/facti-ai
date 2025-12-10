@@ -53,6 +53,7 @@ function DashboardPage() {
   const handleFileChange = (setter) => (e) => {
     const file = e.target.files[0];
     if (file) setter(file);
+    e.target.value = '';
   };
 
   const analyzeVideo = async () => {
